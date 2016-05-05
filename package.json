@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "doctest for elm",
   "main": "src/index.js",
+  "bin": "./cli.js",
   "dependencies": {
   },
   "devDependencies": {

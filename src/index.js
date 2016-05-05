@@ -43,7 +43,7 @@ function collectTestResults( tempModuleName ) {
 	//log( stdout )
 	const match = stdout.match(/^> (.+)/gm)
 	if ( !match ) return []
-	const resultStr = match[ 0 ].replace(/^[ >|]+(.+)/, '$1')
+	const resultStr = match[ 0 ].replace(/[^"]*(".+")( : .*)?/, '$1')
 	return JSON.parse( JSON.parse( resultStr ))
 }
 
@@ -110,6 +110,5 @@ log( failures )
 const report = createReport( elmfile, results, failures )
 console.log( report )
 
-if ( debug ) cleanTempFile( tempModuleName )
-if ( failures ) process.exit(1)
-
+if ( !debug ) cleanTempFile( tempModuleName )
+if ( failures.length > 0 ) process.exit(1)
