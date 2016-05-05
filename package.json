@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "description": "doctest for elm",
   "main": "src/index.js",
-  "bin": "./cli.js",
-  "dependencies": {
+  "bin": {
+    "elm-doctest": "./cli.js"
   },
+  "dependencies": {},
   "devDependencies": {
     "babel-cli": "^6.5.1",
     "babel-preset-es2015": "^6.5.0",
@@ -17,9 +18,18 @@
     "watch": "babel src/index.js --watch -o index.js --source-maps inline",
     "test": "eslint src/index.js"
   },
-  "repository" : {
-    "type": "git", "url": "https://github.com/tshm/elm-doctest.git"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tshm/elm-doctest.git"
   },
   "author": "Toshihide Satake <2sm@csc.jp>",
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tshm/elm-doctest/issues"
+  },
+  "homepage": "https://github.com/tshm/elm-doctest#readme",
+  "keywords": [
+    "elm",
+    "doctest"
+  ]
 }
