@@ -1,0 +1,9 @@
+machine:
+  node:
+    version: 5.5
+
+test:
+  pre:
+    - npm install elm
+    - elm make Test.elm
+
