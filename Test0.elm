@@ -8,7 +8,7 @@ module Test where
 -- [1, 2, 3]
 --
 -- >>> greetingTo "World"
--- "Hello World"
+-- "Konnichiwa World"
 --
 add : Int -> Int -> Int
 add x y = x + y

@@ -15,8 +15,9 @@
   },
   "scripts": {
     "build": "babel src/index.js -o index.js",
-    "watch": "babel src/index.js --watch -o index.js --source-maps inline",
-    "test": "eslint src/index.js"
+    "watch": "babel src/index.js --watch -o index.js",
+    "pretest": "eslint src/index.js",
+    "test": "node ./cli.js Test.elm"
   },
   "repository": {
     "type": "git",
