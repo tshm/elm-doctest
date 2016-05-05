@@ -3,12 +3,44 @@ doctest runner against Elm-lang source files
 
 ## usage
 
-> elm-doctest ModuleTobeTested.elm
+```js
+elm-doctest ModuleTobeTested.elm
+```
 
 ## example
 
-ModuleTobeTested.elm
+ModuleTobeTested.elm:
+```Elm
+module ModuleTobeTested where
 
+-- |
+-- >>> add 3 5
+-- 8
+--
+-- >>> removeZeros [0, 1, 2, 3, 0]
+-- [1, 2, 3]
+--
+-- >>> greetingTo "World"
+-- "Konnichiwa World"
+--
+add : Int -> Int -> Int
+add x y = x + y
+
+greetingTo : String -> String
+greetingTo x = "Hello " ++ x
+
+removeZeros : List Int -> List Int
+removeZeros = List.filter (\x -> x /= 0)
+```
+
+outputs
+```
+Starting elm-doctest ...
+### Failure in Test.elm:10: expression 'greetingTo "World"'
+expected: "Konnichiwa World"
+ but got: "Hello World"
+Examples: 3  Failures: 1
+```
 
 ## license
 
