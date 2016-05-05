@@ -1,0 +1,21 @@
+{
+  "name": "doctest",
+  "version": "0.0.1",
+  "description": "doctest for elm",
+  "main": "src/index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "babel-cli": "^6.5.1",
+    "babel-preset-es2015": "^6.5.0",
+    "eslint": "^2.9.0",
+    "eslint-config-google": "^0.5.0"
+  },
+  "scripts": {
+    "build": "babel src/index.js -o index.js",
+    "watch": "babel src/index.js --watch -o index.js --source-maps inline",
+    "test": "eslint src/index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
