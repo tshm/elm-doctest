@@ -5,5 +5,5 @@ machine:
 test:
   pre:
     - npm install elm
-    - elm make Test.elm
+    - elm make --yes Test.elm
 
