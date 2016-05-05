@@ -1,18 +1,21 @@
-module Test (name) where
+module Test where
 
 -- |
 -- >>> add 3 5
 -- 8
 --
--- >>> add 4 5
--- 9
+-- >>> removeZeros [0, 1, 2, 3, 0]
+-- [1, 2, 3]
 --
--- >>> name
--- "test"
+-- >>> greetingTo "World"
+-- "Konnichiwa World"
 --
 add : Int -> Int -> Int
 add x y = x + y
 
-name : String
-name = "test"
+greetingTo : String -> String
+greetingTo x = "Hello " ++ x
+
+removeZeros : List Int -> List Int
+removeZeros = List.filter (\x -> x /= 0)
 

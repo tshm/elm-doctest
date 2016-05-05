@@ -72,7 +72,7 @@ function cleanTempFile(tempModuleName) {
 }
 
 function createReport(filename, results, failures) {
-	var base = ['Examples: ' + results.length, 'Failures: ' + failures.length].join('  ');
+	var summary = ['Examples: ' + results.length, 'Failures: ' + failures.length].join('  ');
 	var reports = failures.map(function (_ref2) {
 		var test = _ref2.test;
 		var expected = _ref2.expected;
@@ -81,7 +81,7 @@ function createReport(filename, results, failures) {
 
 		return ['### Failure in ' + filename + ':' + line + ': expression \'' + test + '\'', 'expected: ' + expected, ' but got: ' + output].join('\n');
 	});
-	return base + '\n' + reports.join('\n\n');
+	return reports.join('\n\n') + '\n' + summary;
 }
 
 // main
