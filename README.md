@@ -1,3 +1,6 @@
+[![Circle CI](https://circleci.com/gh/tshm/elm-doctest.svg?style=svg)](https://circleci.com/gh/tshm/elm-doctest)
+[![npm version](https://badge.fury.io/js/elm-doctest.svg)](https://badge.fury.io/js/elm-doctest)
+
 # elm-doctest
 doctest runner against Elm-lang source files
 
