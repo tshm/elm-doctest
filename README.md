@@ -4,6 +4,38 @@
 # elm-doctest
 doctest runner against Elm-lang source files
 
+## installation
+```shell
+npm install elm-doctest
+```
+It depends on `elm` and assumes that `elm-make` and `elm-repl` are available
+either via systemwide installation or npm module installation.
+Make sure `elm-make` succeeds with your elm source files.
+
+## how does it work?
+It utilizes `elm-repl` for expression evaluation and compare the values
+against the expected value.
+(It does not comapre stringified values like haskell doctest does via
+GHCi outputs.)
+
+It only evaluates the expressions that follows `-- >>>`
+(i.e. Elm comment symbol followed by space and three LT chars
+until end of the line)
+and the expression on the next line after `-- `.
+
+For example, if the comment states:
+```Elm
+-- >>> 3 * 2
+-- 6
+```
+Then, elm-doctest asks elm-repl to evaluate the
+actual code section in the source file and
+effectively following expression:
+```Elm
+(3 * 2) == (6)
+```
+If value reported by `elm-repl` is `True` then test passes, fail otherwise.
+
 ## usage
 
 ```js
@@ -36,7 +68,7 @@ removeZeros : List Int -> List Int
 removeZeros = List.filter (\x -> x /= 0)
 ```
 
-outputs
+evaluation `elm-doctest ModuleTobeTested.elm` outputs
 ```
 Starting elm-doctest ...
 ### Failure in Test.elm:10: expression 'greetingTo "World"'
