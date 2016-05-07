@@ -14,10 +14,7 @@
     "eslint-config-google": "^0.5.0"
   },
   "scripts": {
-    "buildelm": "elm-make Main.elm --output main.js",
-    "build": "babel src/index.js -o index.js",
-    "watch": "babel src/index.js --watch -o index.js",
-    "pretest": "eslint src/index.js",
+    "build": "elm-make src/Main.elm --output index.js",
     "test": "node ./cli.js Test.elm"
   },
   "repository": {

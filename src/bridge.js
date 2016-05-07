@@ -22,7 +22,7 @@ function loadElm( path ) {
 
 /** main
  */
-const Elm = loadElm('./main.js')
+const Elm = loadElm('./index.js')
 const app = Elm.worker( Elm.Main,
   { srccode: ''
 	, result: { stdout: '', filename: ''}
@@ -41,7 +41,7 @@ app.ports.srccode.send( elmsrc )
 app.ports.evaluate.subscribe(function( resource ) {
 	if ( resource.src.length == 0 ) return
 	log('writing temporary source into file...')
-	fs.writeFileSync('DoctestTempModule__.elm', resource.src )
+	fs.writeFileSync('./src/DoctestTempModule__.elm', resource.src )
 	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
 	//log(stdout)
 	app.ports.result.send({ stdout: stdout, filename: elmfile })

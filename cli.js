@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('./bridge.js')
+require('./src/bridge.js')
