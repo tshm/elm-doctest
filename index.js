@@ -37,7 +37,7 @@ function collectSpecs(src) {
 function collectTestResults(tempModuleName) {
 	var input = ['import ' + tempModuleName, 'import Json.Encode exposing (object, list, bool, string, encode)', 'encode 0 <| list <| \\', '  List.map (\\(r,o) -> object [("result", bool r), ("output", string o)])\\', '  ' + tempModuleName + '.doctestResults_'].join('\n');
 	var stdout = exec('elm-repl', { input: input, encoding: 'utf8' });
-	//log( stdout )
+	log(stdout);
 	var match = stdout.match(/^> (.+)/gm);
 	if (!match) return [];
 	var resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1');
@@ -50,7 +50,7 @@ function collectTestResults(tempModuleName) {
 function createTempModule(src, specs) {
 	var tempModuleName = 'DoctestTempModule__';
 	var tempFilename = tempModuleName + '.elm';
-	var re = /module(.|\r|\n)*where/g;
+	var re = /^\s*module(.|\r|\n)*?where/g;
 	var headerstrippedsrc = src.replace(re, '');
 	var specAssertions = specs.map(function (_ref) {
 		var test = _ref.test;

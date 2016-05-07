@@ -40,7 +40,7 @@ function collectTestResults( tempModuleName ) {
 		`  ${ tempModuleName }.doctestResults_`
 	].join('\n')
 	const stdout = exec('elm-repl', { input, encoding: 'utf8'})
-	//log( stdout )
+	log( stdout )
 	const match = stdout.match(/^> (.+)/gm)
 	if ( !match ) return []
 	const resultStr = match[ 0 ].replace(/[^"]*(".+")( : .*)?/, '$1')
@@ -53,7 +53,7 @@ function collectTestResults( tempModuleName ) {
 function createTempModule( src, specs ) {
 	const tempModuleName = 'DoctestTempModule__'
 	const tempFilename = tempModuleName + '.elm'
-	const re = /module(.|\r|\n)*where/g
+	const re = /^\s*module(.|\r|\n)*?where/g
 	const headerstrippedsrc = src.replace( re, '')
 	const specAssertions = specs.map(({ test, expected }) => {
 		const result = `(${ expected }) == (${ test })`
