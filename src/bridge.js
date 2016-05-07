@@ -13,21 +13,18 @@ function log( o ) {
  * and returns Elm object
  */
 function loadElm( path ) {
-	log('exports called.')
 	const data = fs.readFileSync( path )
 	const context = { console, setInterval, setTimeout, setImmediate }
 	vm.runInNewContext( data, context, path )
 	return context.Elm
 }
 
-/** main
- */
+/** main */
 const Elm = loadElm('./index.js')
-const app = Elm.worker( Elm.Main,
-  { srccode: ''
-	, result: { stdout: '', filename: ''}
-  }
-)
+const app = Elm.worker( Elm.Main, {
+	srccode: '',
+	result: { stdout: '', filename: ''}
+})
 
 console.log('Starting elm-doctest ...')
 if ( proc.argv.length != 3 ) {
@@ -35,19 +32,30 @@ if ( proc.argv.length != 3 ) {
 	process.exit( 1 )
 }
 const elmfile = proc.argv[ 2 ]
-const elmsrc = fs.readFileSync( elmfile, 'utf8')
-app.ports.srccode.send( elmsrc )
+try {
+	const elmsrc = fs.readFileSync( elmfile, 'utf8')
+	app.ports.srccode.send( elmsrc )
+} catch(e) {
+	log(e)
+	process.exit( 1 )
+}
 
 app.ports.evaluate.subscribe(function( resource ) {
 	if ( resource.src.length == 0 ) return
-	log('writing temporary source into file...')
+	// log('writing temporary source into file...')
 	fs.writeFileSync('./src/DoctestTempModule__.elm', resource.src )
 	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
-	//log(stdout)
-	app.ports.result.send({ stdout: stdout, filename: elmfile })
+	// log( stdout )
+	const match = stdout.match(/^> (.+)/gm)
+	if ( !match ) return []
+	const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
+	app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
+	if ( fs.existsSync('./src/DoctestTempModule__.elm'))
+		fs.unlinkSync('./src/DoctestTempModule__.elm')
 })
 
 app.ports.report.subscribe(function( report ) {
+	if ( report.text.length == 0 ) return
 	log( report.text )
 	if ( report.failed ) process.exit(1)
 	process.exit()

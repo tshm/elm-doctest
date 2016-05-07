@@ -3,6 +3,7 @@ module DocTest where
 import Regex exposing (..)
 import String
 import Json.Decode exposing (..)
+-- import Debug exposing (..)
 
 {-- model for holding spec info -}
 type alias Spec =
@@ -23,6 +24,9 @@ newSpec test expected line = Spec test expected line "" False
 --
 -- >>> collectSpecs "-- >>> test\n-- 8"
 -- [newSpec "test" "8" 1]
+--
+-- >>> collectSpecs "-- >>> test\n-- 8"
+-- [Spec "test" "8" 1 "" False]
 --
 -- >>> collectSpecs "-- >>> test\n-- 8\n-- >>> xxx\n-- 9"
 -- [(newSpec "test" "8" 1), (newSpec "xxx" "9" 3)]
@@ -72,17 +76,18 @@ createTempModule src specs =
   in newmodule ++ testDecr ++ footer
 
 -- | make human readable report
--- >>> createReport "Test.elm" [newSpec "3+1" "4" 1] []
--- "Examples: 1  Failures: 0"
+-- >>> createReport "Test.elm" [Spec "3+1" "4" 1 "4" True]
+-- ("Examples: 1  Failures: 0", True)
 --
--- >>> createReport "Test.elm" [newSpec "3+1" "3" 1] [Spec "3+1" "3" 1 "4" False]
--- "### Failure in Test.elm:1: expression 3+1\nexpected: 3\n but got: 4\nExamples: 1  Failures: 1"
+-- >>> createReport "Test.elm" [Spec "3+1" "3" 1 "4" False]
+-- ("### Failure in Test.elm:1: expression 3+1\nexpected: 3\n but got: 4\nExamples: 1  Failures: 1", False)
 --
-createReport : String -> List Spec -> List Spec -> String
-createReport filename results failures =
+createReport : String -> List Spec -> (String, Bool)
+createReport filename specs =
   let
+    failures = List.filter (not << .result) specs
     summary = String.join "  "
-      [ "Examples: " ++ (toString <| List.length results)
+      [ "Examples: " ++ (toString <| List.length specs)
       , "Failures: " ++ (toString <| List.length failures)
       ]
     reports = failures |> List.map formatFailure
@@ -92,30 +97,25 @@ createReport filename results failures =
       , " but got: " ++ output
       , ""
       ]
-  in String.join "\n" reports ++ summary
+  in (String.join "\n" reports ++ summary, List.length failures == 0)
 
 -- | parse the raw json string which dumped by elm-repl
 --
--- >> parseResult """> > > | | "[{\"result\":true,\"output\":\"8\"},{\"result\":true,\"output\":\"[1,2,3]\"},{\"result\":true,\"output\":\"\\\"Hello World\\\"\"}]""""
---
--- >>> parseResult "> > > | | \"[]\""
+-- >>> parseResult "[]"
 -- []
 --
--- >>> parseResult "> > > | | \"[{\"result\":true, \"output\":\"8\"}]\""
+-- >>> parseResult "[{\"result\":true, \"output\":\"8\"}]"
 -- [("8", True)]
 --
--- >>> parseResult "> > > | | \"[{\"result\":true, \"output\":\"8\"},{\"result\":false, \"output\":\"3\"}]\""
+-- >>> parseResult "[{\"result\":true, \"output\":\"8\"},{\"result\":false, \"output\":\"3\"}]"
 -- [("8", True), ("3", False)]
 --
 parseResult : String -> List (String, Bool)
 parseResult txt =
   let
-    matches = find (AtMost 1) (regex "[^\"]+\"(.+)\"") txt
-    json = Maybe.withDefault ""
-         <| List.head matches `Maybe.andThen` (Maybe.oneOf << .submatches)
     decoder = Json.Decode.list
             <| object2 (,) ("output" := string) ("result" := bool)
-  in Result.withDefault [] <| decodeString decoder json
+  in Result.withDefault [] <| decodeString decoder txt
 
 -- | merge result into spec list
 -- >>> mergeResultIntoSpecs [Spec "1+2" "3" 1 "3" True] [("3", True)]
@@ -133,10 +133,9 @@ mergeRawResultIntoSpecs specs txt =
   mergeResultIntoSpecs specs <| parseResult txt
 
 -- | create report from raw result
-createReportFromResult : String -> List Spec -> String -> String
+createReportFromResult : String -> List Spec -> String -> (String, Bool)
 createReportFromResult filename specs result =
   let
       resultSpecs = mergeRawResultIntoSpecs specs result
-      failedSpecs = List.filter (not << .result) resultSpecs
-  in createReport filename specs failedSpecs
+  in createReport filename resultSpecs
 

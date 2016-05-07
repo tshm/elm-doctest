@@ -2,40 +2,51 @@ module Main where
 
 import DocTest
 import Signal
+import String exposing (isEmpty)
+-- import Array exposing (Array)
+-- import Debug exposing (..)
 
--- internal data stream
-type alias Model =
-  { specs : List DocTest.Spec
-  , source : String
-  }
-
-model : Signal Model
-model =
-  Signal.map (\s -> { specs = DocTest.collectSpecs s, source = s }) srccode
+specs : Signal (List DocTest.Spec)
+specs = Signal.map DocTest.collectSpecs srccode
 
 -- input ports
 port srccode : Signal String
-port result : Signal { stdout: String, filename: String }
+port result : Signal Result
+-- , { result: [], srccode: '' }
+
+--type alias Result = String
+type alias Result =
+  { stdout : String
+  , filename : String
+  }
+--type alias N = Int
+--{evals: String, filename: String}
+  -- { evals: List
+  --   { result: Bool
+  --   , output: String
+  --   }
+  -- , filename: String
+  -- }
 
 -- output ports
 port evaluate : Signal { src: String, runner: String }
 port evaluate = 
   let
-    createEvaluationResource model =
-      let
-        src' = DocTest.createTempModule (model.source) (model.specs)
-        runner = DocTest.evaluationScript
-      in { src = src', runner = runner }
-  in Signal.map createEvaluationResource model
+    createEvaluationResource specs src =
+      { src = DocTest.createTempModule src specs
+      , runner = DocTest.evaluationScript
+      }
+  in Signal.map2 createEvaluationResource specs srccode
 
 port report : Signal { text: String, failed: Bool }
-port report = Signal.map2 createReport model result
+port report = Signal.map2 createReport specs result
 
-createReport : Model
-  -> { stdout: String, filename: String }
-  -> { text: String, failed: Bool }
-createReport { specs } result
+createReport : List (DocTest.Spec) -> Result -> { text: String, failed: Bool }
+createReport specs result
   = let
-      text = DocTest.createReportFromResult result.filename specs result.stdout
-    in { text = text, failed = True }
+      (text, succeed) =
+        if List.length specs > 0 && not (isEmpty result.stdout)
+        then DocTest.createReportFromResult result.filename specs result.stdout
+        else ("", True)
+    in { text = text, failed = not succeed }
 
