@@ -9145,82 +9145,27 @@ Elm.DocTest.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $String = Elm.String.make(_elm);
    var _op = {};
-   var mergeResultIntoSpecs = F2(function (specs,results) {
+   var mergeResultIntoSpecs = F2(function (specs,outputs) {
       var merge = F2(function (spec,_p0) {
          var _p1 = _p0;
-         return _U.update(spec,{output: _p1._0,result: _p1._1});
+         return _U.update(spec,
+         {output: _p1.expression,passed: _p1.passed});
       });
-      return A3($List.map2,merge,specs,results);
-   });
-   var parseResult = function (txt) {
-      var decoder = $Json$Decode.list(A3($Json$Decode.object2,
-      F2(function (v0,v1) {
-         return {ctor: "_Tuple2",_0: v0,_1: v1};
-      }),
-      A2($Json$Decode._op[":="],"output",$Json$Decode.string),
-      A2($Json$Decode._op[":="],"result",$Json$Decode.bool)));
-      return A2($Result.withDefault,
-      _U.list([]),
-      A2($Json$Decode.decodeString,decoder,txt));
-   };
-   var mergeRawResultIntoSpecs = F2(function (specs,txt) {
-      return A2(mergeResultIntoSpecs,specs,parseResult(txt));
-   });
-   var createReport = F2(function (filename,specs) {
-      var formatFailure = function (_p2) {
-         var _p3 = _p2;
-         return A2($String.join,
-         "\n",
-         _U.list([A2($Basics._op["++"],
-                 "### Failure in ",
-                 A2($Basics._op["++"],
-                 filename,
-                 A2($Basics._op["++"],
-                 ":",
-                 A2($Basics._op["++"],
-                 $Basics.toString(_p3.line),
-                 A2($Basics._op["++"],": expression ",_p3.test)))))
-                 ,A2($Basics._op["++"],"expected: ",_p3.expected)
-                 ,A2($Basics._op["++"]," but got: ",_p3.output)
-                 ,""]));
-      };
-      var failures = A2($List.filter,
-      function (_p4) {
-         return $Basics.not(function (_) {    return _.result;}(_p4));
-      },
-      specs);
-      var summary = A2($String.join,
-      "  ",
-      _U.list([A2($Basics._op["++"],
-              "Examples: ",
-              $Basics.toString($List.length(specs)))
-              ,A2($Basics._op["++"],
-              "Failures: ",
-              $Basics.toString($List.length(failures)))]));
-      var reports = A2($List.map,formatFailure,failures);
-      return {ctor: "_Tuple2"
-             ,_0: A2($Basics._op["++"],A2($String.join,"\n",reports),summary)
-             ,_1: _U.eq($List.length(failures),0)};
-   });
-   var createReportFromResult = F3(function (filename,
-   specs,
-   result) {
-      var resultSpecs = A2(mergeRawResultIntoSpecs,specs,result);
-      return A2(createReport,filename,resultSpecs);
+      return A3($List.map2,merge,specs,outputs);
    });
    var createTempModule = F2(function (src,specs) {
-      var evalSpec = function (_p5) {
-         var _p6 = _p5;
-         var _p7 = _p6.test;
+      var evalSpec = function (_p2) {
+         var _p3 = _p2;
+         var _p4 = _p3.test;
          return A2($String.join,
          "",
          _U.list(["(("
-                 ,_p7
+                 ,_p4
                  ,")==("
-                 ,_p6.expected
+                 ,_p3.expected
                  ,"), "
                  ,"(toString ("
-                 ,_p7
+                 ,_p4
                  ,")))"]));
       };
       var footer = A2($Basics._op["++"],
@@ -9240,47 +9185,104 @@ Elm.DocTest.make = function (_elm) {
       newmodule,
       A2($Basics._op["++"],testDecr,footer));
    });
-   var evaluationScript = "\nimport DoctestTempModule__\nimport Json.Encode exposing (object, list, bool, string, encode)\nencode 0 <| list <| \\\n  List.map (\\(r,o) -> object [(\"result\", bool r), (\"output\", string o)])\\\n  DoctestTempModule__.doctestResults_\n";
+   var evaluationScript = "\nimport DoctestTempModule__\nimport Json.Encode exposing (object, list, bool, string, encode)\nencode 0 <| list <| \\\n  List.map (\\(r,o) -> object [(\"passed\", bool r), (\"output\", string o)])\\\n  DoctestTempModule__.doctestResults_\n";
+   var Output = F2(function (a,b) {
+      return {expression: a,passed: b};
+   });
+   var parseOutput = function (txt) {
+      var decoder = $Json$Decode.list(A3($Json$Decode.object2,
+      Output,
+      A2($Json$Decode._op[":="],"output",$Json$Decode.string),
+      A2($Json$Decode._op[":="],"passed",$Json$Decode.bool)));
+      return A2($Result.withDefault,
+      _U.list([]),
+      A2($Json$Decode.decodeString,decoder,txt));
+   };
+   var mergeRawOutputIntoSpecs = F2(function (specs,txt) {
+      return A2(mergeResultIntoSpecs,specs,parseOutput(txt));
+   });
+   var Report = F2(function (a,b) {
+      return {text: a,failed: b};
+   });
+   var createReport = F2(function (filename,specs) {
+      var reportFailure = function (_p5) {
+         var _p6 = _p5;
+         return A2($String.join,
+         "\n",
+         _U.list([A2($Basics._op["++"],
+                 "### Failure in ",
+                 A2($Basics._op["++"],
+                 filename,
+                 A2($Basics._op["++"],
+                 ":",
+                 A2($Basics._op["++"],
+                 $Basics.toString(_p6.line),
+                 A2($Basics._op["++"],": expression ",_p6.test)))))
+                 ,A2($Basics._op["++"],"expected: ",_p6.expected)
+                 ,A2($Basics._op["++"]," but got: ",_p6.output)
+                 ,""]));
+      };
+      var failures = A2($List.filter,
+      function (_p7) {
+         return $Basics.not(function (_) {    return _.passed;}(_p7));
+      },
+      specs);
+      var summary = A2($String.join,
+      "  ",
+      _U.list([A2($Basics._op["++"],
+              "Examples: ",
+              $Basics.toString($List.length(specs)))
+              ,A2($Basics._op["++"],
+              "Failures: ",
+              $Basics.toString($List.length(failures)))]));
+      var reports = A2($List.map,reportFailure,failures);
+      return A2(Report,
+      A2($Basics._op["++"],A2($String.join,"\n",reports),summary),
+      $Basics.not($List.isEmpty(failures)));
+   });
+   var createReportFromOutput = F3(function (filename,
+   specs,
+   output) {
+      var resultSpecs = A2(mergeRawOutputIntoSpecs,specs,output);
+      return A2(createReport,filename,resultSpecs);
+   });
    var Spec = F5(function (a,b,c,d,e) {
-      return {test: a,expected: b,line: c,output: d,result: e};
+      return {test: a,expected: b,line: c,output: d,passed: e};
    });
    var newSpec = F3(function (test,expected,line) {
       return A5(Spec,test,expected,line,"",false);
    });
    var collectSpecs = function (txt) {
-      var getLine = function (m) {
+      var countLines = function (m) {
          return $List.length($String.lines(A2($String.left,
          m.index,
          txt)));
       };
       var extract = function (m) {
-         var _p8 = function () {
-            var _p9 = m.submatches;
-            if (_p9.ctor === "::" && _p9._0.ctor === "Just" && _p9._1.ctor === "::" && _p9._1._0.ctor === "Just")
-            {
-                  return {ctor: "_Tuple2",_0: _p9._0._0,_1: _p9._1._0._0};
-               } else {
-                  return {ctor: "_Tuple2",_0: "",_1: ""};
-               }
-         }();
-         var test = _p8._0;
-         var expect = _p8._1;
-         return A3(newSpec,test,expect,getLine(m));
+         var _p8 = m.submatches;
+         if (_p8.ctor === "::" && _p8._0.ctor === "Just" && _p8._1.ctor === "::" && _p8._1._0.ctor === "Just")
+         {
+               return A3(newSpec,_p8._0._0,_p8._1._0._0,countLines(m));
+            } else {
+               return A3(newSpec,"","",countLines(m));
+            }
       };
       var re = $Regex.regex("--\\s*>>>\\s*(.+)[\\r\\n]--\\s*([^\\n\\r]+)");
       return A2($List.map,extract,A3($Regex.find,$Regex.All,re,txt));
    };
    return _elm.DocTest.values = {_op: _op
                                 ,Spec: Spec
+                                ,Report: Report
+                                ,Output: Output
                                 ,newSpec: newSpec
                                 ,collectSpecs: collectSpecs
                                 ,evaluationScript: evaluationScript
                                 ,createTempModule: createTempModule
                                 ,createReport: createReport
-                                ,parseResult: parseResult
+                                ,parseOutput: parseOutput
                                 ,mergeResultIntoSpecs: mergeResultIntoSpecs
-                                ,mergeRawResultIntoSpecs: mergeRawResultIntoSpecs
-                                ,createReportFromResult: createReportFromResult};
+                                ,mergeRawOutputIntoSpecs: mergeRawOutputIntoSpecs
+                                ,createReportFromOutput: createReportFromOutput};
 };
 Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
@@ -9297,19 +9299,6 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $String = Elm.String.make(_elm);
    var _op = {};
-   var createReport = F2(function (specs,result) {
-      var _p0 = _U.cmp($List.length(specs),
-      0) > 0 && $Basics.not($String.isEmpty(result.stdout)) ? A3($DocTest.createReportFromResult,
-      result.filename,
-      specs,
-      result.stdout) : {ctor: "_Tuple2",_0: "",_1: true};
-      var text = _p0._0;
-      var succeed = _p0._1;
-      return {text: text,failed: $Basics.not(succeed)};
-   });
-   var Result = F2(function (a,b) {
-      return {stdout: a,filename: b};
-   });
    var result = Elm.Native.Port.make(_elm).inboundSignal("result",
    "Main.Result",
    function (v) {
@@ -9327,6 +9316,23 @@ Elm.Main.make = function (_elm) {
       v);
    });
    var specs = A2($Signal.map,$DocTest.collectSpecs,srccode);
+   var report = Elm.Native.Port.make(_elm).outboundSignal("report",
+   function (v) {
+      return {text: v.text,failed: v.failed};
+   },
+   function () {
+      var createReport = F2(function (specs,_p0) {
+         var _p1 = _p0;
+         var _p2 = _p1.stdout;
+         return $List.isEmpty(specs) || $String.isEmpty(_p2) ? A2($DocTest.Report,
+         "",
+         false) : A3($DocTest.createReportFromOutput,
+         _p1.filename,
+         specs,
+         _p2);
+      });
+      return A3($Signal.map2,createReport,specs,result);
+   }());
    var evaluate = Elm.Native.Port.make(_elm).outboundSignal("evaluate",
    function (v) {
       return {src: v.src,runner: v.runner};
@@ -9338,13 +9344,10 @@ Elm.Main.make = function (_elm) {
       });
       return A3($Signal.map2,createEvaluationResource,specs,srccode);
    }());
-   var report = Elm.Native.Port.make(_elm).outboundSignal("report",
-   function (v) {
-      return {text: v.text,failed: v.failed};
-   },
-   A3($Signal.map2,createReport,specs,result));
+   var Result = F2(function (a,b) {
+      return {stdout: a,filename: b};
+   });
    return _elm.Main.values = {_op: _op
-                             ,specs: specs
                              ,Result: Result
-                             ,createReport: createReport};
+                             ,specs: specs};
 };
