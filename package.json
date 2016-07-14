@@ -6,6 +6,9 @@
   "bin": {
     "elm-doctest": "./cli.js"
   },
+  "files": [
+    "./src", "./distribution"
+  ],
   "dependencies": {},
   "devDependencies": {
     "elm": "^0.17.1"
