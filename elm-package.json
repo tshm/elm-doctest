@@ -1,8 +1,8 @@
 {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "summary": "doctest for elm",
     "repository": "http://github.com/tshm/elm-doctest.git",
-    "license": "BSD3",
+    "license": "MIT",
     "source-directories": [
         "./src"
     ],

@@ -22,7 +22,7 @@ function loadElm( path ) {
 }
 
 /** main */
-const Elm = loadElm('./index.js')
+const Elm = loadElm('./distribution/index.js')
 const app = Elm.Main.worker()
 
 console.log('Starting elm-doctest ...')
