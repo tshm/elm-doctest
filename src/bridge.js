@@ -21,10 +21,11 @@ function loadElm( path ) {
 
 /** main */
 const Elm = loadElm('./index.js')
-const app = Elm.worker( Elm.Main, {
-	srccode: '',
-	result: { stdout: '', filename: ''}
-})
+const app = Elm.Main.worker({srccode: 'test'})
+// Elm.Main, {
+// 	srccode: '',
+// 	result: { stdout: '', filename: ''}
+// })
 
 console.log('Starting elm-doctest ...')
 if ( proc.argv.length != 3 ) {
@@ -41,6 +42,7 @@ try {
 }
 
 app.ports.evaluate.subscribe(function( resource ) {
+	log('----------- evaluate called.')
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
 	fs.writeFileSync('./src/DoctestTempModule__.elm', resource.src )

@@ -1,4 +1,4 @@
-module Test where
+module Test
 
 -- |
 -- >>> add 3 5

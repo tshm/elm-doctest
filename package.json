@@ -8,7 +8,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "elm": "^0.16.0"
+    "elm": "^0.17.1"
   },
   "scripts": {
     "build": "elm-make --yes --warn src/Main.elm --output index.js",

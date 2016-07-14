@@ -1,4 +1,4 @@
-module DocTest where
+module DocTest exposing (..)
 
 import Regex exposing (..)
 import String
