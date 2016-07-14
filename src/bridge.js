@@ -1,10 +1,22 @@
 /** allow to use Elm from nodejs...
  */
 const debug = false
+const path = require('path')
 const vm = require('vm')
 const fs = require('fs')
 const proc = require('process')
 const exec = require('child_process').execSync
+
+// extract source folder from elm-package.json
+const cwd = (() => {
+	try {
+		const data = fs.readFileSync('elm-package.json' )
+		return JSON.parse( data )['source-directories'][0]
+	} catch (e) {
+		return './'
+	}
+})()
+const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
 
 function log( o ) {
 	console.log( o )
@@ -22,7 +34,7 @@ function loadElm( path ) {
 }
 
 /** main */
-const Elm = loadElm('./distribution/index.js')
+const Elm = loadElm(path.resolve(__dirname, '../distribution/index.js'))
 const app = Elm.Main.worker()
 
 console.log('Starting elm-doctest ...')
@@ -48,7 +60,7 @@ app.ports.evaluate.subscribe(function( resource ) {
 	}
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
-	fs.writeFileSync('./src/DoctestTempModule__.elm', resource.src )
+	fs.writeFileSync(testfilename, resource.src )
 	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
 	if ( debug ) log( stdout )
 	const match = stdout.match(/^> (.+)/gm)
@@ -56,8 +68,8 @@ app.ports.evaluate.subscribe(function( resource ) {
 	const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
 	if ( debug ) log( resultStr )
 	app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
-	if ( !debug && fs.existsSync('./src/DoctestTempModule__.elm'))
-		fs.unlinkSync('./src/DoctestTempModule__.elm')
+	if ( !debug && fs.existsSync( testfilename ))
+		fs.unlinkSync( testfilename )
 })
 
 app.ports.report.subscribe(function( report ) {
