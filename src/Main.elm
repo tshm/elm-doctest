@@ -5,19 +5,19 @@ import DocTest
 import Html.App
 import Html exposing (div)
 
-main : Program { srccode : String }
+main : Program Never
 main =
-  Html.App.programWithFlags
+  Html.App.program
     { init = init
     , update = update
     , subscriptions = subscriptions
     , view = view
     }
 
-init : {srccode: String} -> (Model, Cmd msg)
-init flg =
+init : (Model, Cmd msg)
+init =
   let
-    model = { stdout = flg.srccode, filename = "" }
+    model = { stdout = "", filename = "" }
   in (model, Cmd.none)
 
 view : Model -> Html.Html Msg

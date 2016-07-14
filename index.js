@@ -7605,10 +7605,10 @@ var _tshm$elm_doctest$Main$view = function (_p0) {
 		_elm_lang$core$Native_List.fromArray(
 			[]));
 };
-var _tshm$elm_doctest$Main$init = function (flg) {
-	var model = {stdout: flg.srccode, filename: ''};
+var _tshm$elm_doctest$Main$init = function () {
+	var model = {stdout: '', filename: ''};
 	return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-};
+}();
 var _tshm$elm_doctest$Main$srccode = _elm_lang$core$Native_Platform.incomingPort('srccode', _elm_lang$core$Json_Decode$string);
 var _tshm$elm_doctest$Main$result = _elm_lang$core$Native_Platform.incomingPort(
 	'result',
@@ -7668,15 +7668,8 @@ var _tshm$elm_doctest$Main$subscriptions = function (_p3) {
 	return _tshm$elm_doctest$Main$srccode(_tshm$elm_doctest$Main$InputSourceCode);
 };
 var _tshm$elm_doctest$Main$main = {
-	main: _elm_lang$html$Html_App$programWithFlags(
-		{init: _tshm$elm_doctest$Main$init, update: _tshm$elm_doctest$Main$update, subscriptions: _tshm$elm_doctest$Main$subscriptions, view: _tshm$elm_doctest$Main$view}),
-	flags: A2(
-		_elm_lang$core$Json_Decode$andThen,
-		A2(_elm_lang$core$Json_Decode_ops[':='], 'srccode', _elm_lang$core$Json_Decode$string),
-		function (srccode) {
-			return _elm_lang$core$Json_Decode$succeed(
-				{srccode: srccode});
-		})
+	main: _elm_lang$html$Html_App$program(
+		{init: _tshm$elm_doctest$Main$init, update: _tshm$elm_doctest$Main$update, subscriptions: _tshm$elm_doctest$Main$subscriptions, view: _tshm$elm_doctest$Main$view})
 };
 
 var Elm = {};
