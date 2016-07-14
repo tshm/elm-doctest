@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "doctest for elm",
   "main": "src/index.js",
   "bin": {
@@ -13,7 +13,8 @@
   "scripts": {
     "build": "elm-make --yes --warn src/Main.elm --output index.js",
     "pretest": "npm run build",
-    "test": "node ./cli.js Test.elm"
+    "test": "node ./cli.js src/DocTest.elm",
+    "test0": "node ./cli.js Test0.elm"
   },
   "repository": {
     "type": "git",

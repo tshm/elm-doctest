@@ -66,8 +66,8 @@ encode 0 <| list <| \\
 """
 
 -- | create temporary module source from original elm source code
--- >>> createTempModule "module Test where" []
--- "module DoctestTempModule__ where\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = []"
+-- >>> createTempModule "module Test exposing ()" []
+-- "module DoctestTempModule__ exposing ()\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = []"
 --
 -- >>> createTempModule "" [newSpec "3+5" "8" 1] |> String.split "\n" |> List.reverse |> List.head
 -- Just "doctestResults_ = [((3+5)==(8), (toString (3+5)))]"
@@ -75,8 +75,8 @@ encode 0 <| list <| \\
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
-    re = regex "^ *module(.|\r|\n)*?where"
-    newheader = "module DoctestTempModule__ where"
+    re = regex "^ *module(.|\r|\n)*?exposing"
+    newheader = "module DoctestTempModule__ exposing"
     newmodule = replace (AtMost 1) re (always newheader) src
     testDecr = "\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = "
     footer = "[" ++ (specs |> List.map evalSpec |> String.join ", ") ++ "]"

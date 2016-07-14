@@ -7451,8 +7451,8 @@ var _tshm$elm_doctest$DocTest$createTempModule = F2(
 					A2(_elm_lang$core$List$map, evalSpec, specs)),
 				']'));
 		var testDecr = '\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = ';
-		var newheader = 'module DoctestTempModule__ where';
-		var re = _elm_lang$core$Regex$regex('^ *module(.|\r|\n)*?where');
+		var newheader = 'module DoctestTempModule__ exposing';
+		var re = _elm_lang$core$Regex$regex('^ *module(.|\r|\n)*?exposing');
 		var newmodule = A4(
 			_elm_lang$core$Regex$replace,
 			_elm_lang$core$Regex$AtMost(1),
@@ -7597,18 +7597,6 @@ var _tshm$elm_doctest$DocTest$createReportFromOutput = F3(
 		return A2(_tshm$elm_doctest$DocTest$createReport, filename, resultSpecs);
 	});
 
-var _tshm$elm_doctest$Main$view = function (_p0) {
-	return A2(
-		_elm_lang$html$Html$div,
-		_elm_lang$core$Native_List.fromArray(
-			[]),
-		_elm_lang$core$Native_List.fromArray(
-			[]));
-};
-var _tshm$elm_doctest$Main$init = function () {
-	var model = {stdout: '', filename: ''};
-	return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-}();
 var _tshm$elm_doctest$Main$srccode = _elm_lang$core$Native_Platform.incomingPort('srccode', _elm_lang$core$Json_Decode$string);
 var _tshm$elm_doctest$Main$result = _elm_lang$core$Native_Platform.incomingPort(
 	'result',
@@ -7629,47 +7617,83 @@ var _tshm$elm_doctest$Main$evaluate = _elm_lang$core$Native_Platform.outgoingPor
 	function (v) {
 		return {src: v.src, runner: v.runner};
 	});
-var _tshm$elm_doctest$Main$update = F2(
-	function (msg, model) {
-		var _p1 = msg;
-		if (_p1.ctor === 'InputSourceCode') {
-			var _p2 = _p1._0;
-			var specs = _tshm$elm_doctest$DocTest$collectSpecs(
-				A2(_elm_lang$core$Debug$log, 'source', _p2));
-			var out = {
-				src: A2(_tshm$elm_doctest$DocTest$createTempModule, _p2, specs),
-				runner: _tshm$elm_doctest$DocTest$evaluationScript
-			};
-			return {
-				ctor: '_Tuple2',
-				_0: model,
-				_1: _tshm$elm_doctest$Main$evaluate(out)
-			};
-		} else {
-			return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-		}
-	});
 var _tshm$elm_doctest$Main$report = _elm_lang$core$Native_Platform.outgoingPort(
 	'report',
 	function (v) {
 		return {text: v.text, failed: v.failed};
 	});
+var _tshm$elm_doctest$Main$update = F2(
+	function (msg, model) {
+		var _p0 = msg;
+		if (_p0.ctor === 'InputSourceCode') {
+			var _p1 = _p0._0;
+			var specs = _tshm$elm_doctest$DocTest$collectSpecs(_p1);
+			var out = {
+				src: A2(_tshm$elm_doctest$DocTest$createTempModule, _p1, specs),
+				runner: _tshm$elm_doctest$DocTest$evaluationScript
+			};
+			return {
+				ctor: '_Tuple2',
+				_0: {specs: specs},
+				_1: _tshm$elm_doctest$Main$evaluate(out)
+			};
+		} else {
+			var createReport = F2(
+				function (specs, _p2) {
+					var _p3 = _p2;
+					var _p4 = _p3.stdout;
+					return (_elm_lang$core$List$isEmpty(specs) || _elm_lang$core$String$isEmpty(_p4)) ? A2(_tshm$elm_doctest$DocTest$Report, '', false) : A3(_tshm$elm_doctest$DocTest$createReportFromOutput, _p3.filename, specs, _p4);
+				});
+			return {
+				ctor: '_Tuple2',
+				_0: model,
+				_1: _tshm$elm_doctest$Main$report(
+					A2(createReport, model.specs, _p0._0))
+			};
+		}
+	});
 var _tshm$elm_doctest$Main$TestResult = F2(
 	function (a, b) {
 		return {stdout: a, filename: b};
 	});
+var _tshm$elm_doctest$Main$Model = function (a) {
+	return {specs: a};
+};
 var _tshm$elm_doctest$Main$NewResult = function (a) {
 	return {ctor: 'NewResult', _0: a};
 };
 var _tshm$elm_doctest$Main$InputSourceCode = function (a) {
 	return {ctor: 'InputSourceCode', _0: a};
 };
-var _tshm$elm_doctest$Main$subscriptions = function (_p3) {
-	return _tshm$elm_doctest$Main$srccode(_tshm$elm_doctest$Main$InputSourceCode);
+var _tshm$elm_doctest$Main$subscriptions = function (_p5) {
+	return _elm_lang$core$Platform_Sub$batch(
+		_elm_lang$core$Native_List.fromArray(
+			[
+				_tshm$elm_doctest$Main$srccode(_tshm$elm_doctest$Main$InputSourceCode),
+				_tshm$elm_doctest$Main$result(_tshm$elm_doctest$Main$NewResult)
+			]));
 };
 var _tshm$elm_doctest$Main$main = {
 	main: _elm_lang$html$Html_App$program(
-		{init: _tshm$elm_doctest$Main$init, update: _tshm$elm_doctest$Main$update, subscriptions: _tshm$elm_doctest$Main$subscriptions, view: _tshm$elm_doctest$Main$view})
+		{
+			init: {
+				ctor: '_Tuple2',
+				_0: {
+					specs: _elm_lang$core$Native_List.fromArray(
+						[])
+				},
+				_1: _elm_lang$core$Platform_Cmd$none
+			},
+			update: _tshm$elm_doctest$Main$update,
+			subscriptions: _tshm$elm_doctest$Main$subscriptions,
+			view: _elm_lang$core$Basics$always(
+				A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[]),
+					_elm_lang$core$Native_List.fromArray(
+						[])))
+		})
 };
 
 var Elm = {};
