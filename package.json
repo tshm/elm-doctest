@@ -7,7 +7,7 @@
     "elm-doctest": "./cli.js"
   },
   "files": [
-    "./src", "./distribution"
+    "./src", "./distribution", "./cli.js"
   ],
   "dependencies": {},
   "devDependencies": {
