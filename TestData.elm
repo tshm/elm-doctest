@@ -1,4 +1,4 @@
-module Test exposing (..)
+module TestData exposing (..)
 
 -- |
 -- >>> add 3 5
@@ -8,7 +8,7 @@ module Test exposing (..)
 -- [1, 2, 3]
 --
 -- >>> greetingTo "World"
--- "Konnichiwa World"
+-- "Hello World"
 --
 add : Int -> Int -> Int
 add x y = x + y

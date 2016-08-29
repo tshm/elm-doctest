@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "doctest for elm",
   "main": "./distribution/index.js",
   "bin": {
@@ -18,8 +18,11 @@
     "lint": "eslint src/bridge.js",
     "pretest": "npm run lint && npm run build",
     "cli": "node ./cli.js",
-    "test": "npm run cli -- src/DocTest.elm",
-    "test0": "node ./cli.js Test0.elm"
+    "test": "npm run test:main && npm run test:data && npm run test:view ",
+    "test:main": "npm run cli -- src/DocTest.elm",
+    "test:data": "npm run cli -- TestData.elm",
+    "test:view": "npm run cli -- TestView.elm",
+    "test0": "node run cli -- Test0.elm"
   },
   "repository": {
     "type": "git",

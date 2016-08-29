@@ -1,4 +1,4 @@
-module Test exposing (..)
+module TestData exposing (..)
 
 -- |
 -- >>> add 3 5
