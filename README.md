@@ -77,8 +77,15 @@ expected: "Konnichiwa World"
 Examples: 3  Failures: 1
 ```
 
+## limitation
+
+As it utilizes `elm-repl`, the script must run inside
+`elm-repl`.
+For example, code which imports `elm-lang/navigation@1.0.0`
+module cannot be tested.
+
+
 ## license
 
 MIT
-
 
