@@ -1,11 +1,11 @@
 /** allow to use Elm from nodejs...
  */
-const debug = false
 const path = require('path')
 const vm = require('vm')
 const fs = require('fs')
 const proc = require('process')
 const exec = require('child_process').execSync
+const debug = proc.env.DEBUG || false
 
 // extract source folder from elm-package.json
 const cwd = (() => {
@@ -37,7 +37,7 @@ function loadElm( path ) {
 const Elm = loadElm(path.resolve(__dirname, '../distribution/index.js'))
 const app = Elm.Main.worker()
 
-console.log('Starting elm-doctest ...')
+log('Starting elm-doctest ...')
 if ( proc.argv.length != 3 ) {
 	console.error('need provide elm source file path')
 	process.exit( 1 )
@@ -56,7 +56,7 @@ try {
 app.ports.evaluate.subscribe(function( resource ) {
 	if ( debug ) {
 		log('----------- evaluate called.')
-		log(resource)
+		log( resource )
 	}
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
