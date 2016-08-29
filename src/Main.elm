@@ -2,16 +2,15 @@ port module Main exposing (..)
 
 import DocTest
 import String
-import Html.App
-import Html exposing (div)
+import VirtualDom
 
 main : Program Never
 main =
-  Html.App.program
-    { init = ({ specs = [] }, Cmd.none)
+  VirtualDom.programWithFlags
+    { init = \_ -> ({ specs = [] }, Cmd.none)
     , update = update
     , subscriptions = subscriptions
-    , view = always <| div [] []
+    , view = \_ -> VirtualDom.text ""
     }
 
 type Msg
