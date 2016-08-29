@@ -8,13 +8,17 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "elm": "^0.17.1"
+    "elm": "^0.17.1",
+    "eslint": "^3.4.0"
   },
   "scripts": {
+    "prebuild": "elm-package install --yes",
     "build": "elm-make --yes --warn src/Main.elm --output ./distribution/index.js",
     "prepublish": "npm run build",
-    "pretest": "npm run build",
-    "test": "node ./cli.js src/DocTest.elm",
+    "lint": "eslint src/bridge.js",
+    "pretest": "npm run lint && npm run build",
+    "cli": "node ./cli.js",
+    "test": "npm run cli -- src/DocTest.elm",
     "test0": "node ./cli.js Test0.elm"
   },
   "repository": {

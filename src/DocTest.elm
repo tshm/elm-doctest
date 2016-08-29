@@ -75,9 +75,14 @@ encode 0 <| list <| \\
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
-    re = regex "^ *module(.|\r|\n)*?exposing"
+    re = regex "^(\\w*\\s*)module(.|\r|\n)*?exposing"
     newheader = "module DoctestTempModule__ exposing"
-    newmodule = replace (AtMost 1) re (always newheader) src
+    isport match = (List.head match.submatches) == Just Nothing
+    moduledecr match =
+      case match.submatches of
+        (Just str)::_ -> str ++ newheader
+        _ -> newheader
+    newmodule = replace (AtMost 1) re moduledecr src
     testDecr = "\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = "
     footer = "[" ++ (specs |> List.map evalSpec |> String.join ", ") ++ "]"
     evalSpec {test, expected} = String.join ""

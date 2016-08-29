@@ -38,6 +38,9 @@ update msg model =
           else DocTest.createReportFromOutput filename specs stdout
       in (model, report <| createReport model.specs result)
 
+port evaluate : { src: String, runner: String } -> Cmd msg
+port report : DocTest.Report -> Cmd msg
+
 -- data models
 type alias TestResult = { stdout : String , filename : String }
 type alias Model =
@@ -56,9 +59,6 @@ type alias Model =
   8. @elm: parse stdout and send formatted report string into js
   9. @elm: dump report and exit
 --}
--- input ports
-port srccode : (String -> msg) -> Sub msg
-port result : (TestResult -> msg) -> Sub msg
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -67,7 +67,6 @@ subscriptions _ =
     , result NewResult
     ]
 
--- output ports
-port evaluate : { src: String, runner: String } -> Cmd msg
-port report : DocTest.Report -> Cmd msg
+port srccode : (String -> msg) -> Sub msg
+port result : (TestResult -> msg) -> Sub msg
 
