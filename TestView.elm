@@ -1,4 +1,8 @@
-module TestData exposing (..)
+module TestData exposing
+    ( add
+    , greetingTo
+    , removeZeros
+    )
 
 -- |
 -- >>> add 3 5

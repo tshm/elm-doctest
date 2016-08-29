@@ -17,6 +17,7 @@ const cwd = (() => {
 	}
 })()
 const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
+const runnerScript = path.resolve(cwd, './RunnerDoctestTempModule__.elm')
 
 function log( o ) {
 	console.log( o )
@@ -27,8 +28,12 @@ if ( debug ) log('############## debug mode is ON ##############')
  * and returns Elm object
  */
 function loadElm( path ) {
+	const MockBrowser = new require('mock-browser').mocks.MockBrowser
+	const browser = new MockBrowser()
+	const window = browser.getWindow()
+	const document = browser.getDocument()
 	const data = fs.readFileSync( path )
-	const context = { console, setInterval, setTimeout, setImmediate }
+	const context = { console, window, document, setInterval, setTimeout, setImmediate }
 	vm.runInNewContext( data, context, path )
 	return context.Elm
 }
@@ -53,26 +58,33 @@ try {
 	process.exit( 1 )
 }
 
-app.ports.evaluate.subscribe(function( resource ) {
+app.ports.evaluate.subscribe( resource => {
 	if ( debug ) {
 		log('----------- evaluate called.')
 		log( resource )
 	}
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
-	fs.writeFileSync(testfilename, resource.src )
-	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
+	fs.writeFileSync( testfilename, resource.src )
+	fs.writeFileSync( runnerScript, resource.runner )
+	const stdout = exec(`elm-make ${runnerScript} --output ${runnerScript}.js`,
+		{ encoding: 'utf8'})
 	if ( debug ) log( stdout )
-	const match = stdout.match(/^> (.+)/gm)
-	if ( !match ) return []
-	const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
-	if ( debug ) log( resultStr )
-	app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
-	if ( !debug && fs.existsSync( testfilename ))
+
+	const Elm_runner = loadElm(`${runnerScript}.js`)
+	const app_runner = Elm_runner.RunnerDoctestTempModule__.worker()
+	app_runner.ports.evalResults.subscribe( results => {
+		if ( debug ) log( results )
+		app.ports.result.send({ stdout: JSON.stringify(results), filename: elmfile })
+	})
+	if ( !debug && fs.existsSync( testfilename ) && fs.existsSync( runnerScript )) {
 		fs.unlinkSync( testfilename )
+		fs.unlinkSync( runnerScript )
+		fs.unlinkSync(`${runnerScript}.js`)
+	}
 })
 
-app.ports.report.subscribe(function( report ) {
+app.ports.report.subscribe( report => {
 	if ( report.text.length == 0 ) return
 	log( report.text )
 	if ( report.failed ) process.exit(1)

@@ -58,35 +58,42 @@ collectSpecs txt =
 -- elm-repl requires tailing back slash for handling multi-line statements
 evaluationScript : String
 evaluationScript = """
+port module RunnerDoctestTempModule__ exposing (..)
 import DoctestTempModule__
-import Json.Encode exposing (object, list, bool, string, encode)
-encode 0 <| list <| \\
-  List.map (\\(r,o) -> object [("passed", bool r), ("output", string o)])\\
-  DoctestTempModule__.doctestResults_
+import VirtualDom
+main : Program Never
+main =
+  VirtualDom.programWithFlags
+    { init = always <| (0, evalResults DoctestTempModule__.doctestResults_)
+    , update = always <| always <| (0, Cmd.none)
+    , subscriptions = always <| Sub.none
+    , view = always <| VirtualDom.text ""
+    }
+port evalResults : List (String, Bool) -> Cmd msg
 """
 
 -- | create temporary module source from original elm source code
--- >>> createTempModule "module Test exposing ()" []
--- "module DoctestTempModule__ exposing ()\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = []"
+-- >>> createTempModule "module Test exposing (..)" []
+-- "module DoctestTempModule__ exposing (doctestResults_)\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = []"
 --
 -- >>> createTempModule "" [newSpec "3+5" "8" 1] |> String.split "\n" |> List.reverse |> List.head
--- Just "doctestResults_ = [((3+5)==(8), (toString (3+5)))]"
+-- Just "doctestResults_ = [( (toString (3+5)), (3+5)==(8) )]"
 --
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
-    re = regex "^(\\w*\\s*)module(.|\r|\n)*?exposing"
-    newheader = "module DoctestTempModule__ exposing"
+    re = regex "^(\\w*\\s*)module\\s+(\\w)+\\s+?exposing\\s+\\([^)]+\\)"
+    newheader = "module DoctestTempModule__ exposing (doctestResults_)"
     isport match = (List.head match.submatches) == Just Nothing
     moduledecr match =
       case match.submatches of
         (Just str)::_ -> str ++ newheader
         _ -> newheader
     newmodule = replace (AtMost 1) re moduledecr src
-    testDecr = "\n\ndoctestResults_ : List (Bool, String)\ndoctestResults_ = "
+    testDecr = "\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = "
     footer = "[" ++ (specs |> List.map evalSpec |> String.join ", ") ++ "]"
     evalSpec {test, expected} = String.join ""
-      ["((", test, ")==(", expected, "), ","(toString (", test ,")))"]
+      ["( (toString (", test ,")), (", test, ")==(", expected, ") )"]
   in newmodule ++ testDecr ++ footer
 
 -- | make human readable report
@@ -119,16 +126,16 @@ createReport filename specs =
 -- >>> parseOutput "[]"
 -- []
 --
--- >>> parseOutput "[{\"passed\":true, \"output\":\"8\"}]"
+-- >>> parseOutput "[[ \"8\", true ]]"
 -- [Output "8" True]
 --
--- >>> parseOutput "[{\"passed\":true, \"output\":\"8\"},{\"passed\":false, \"output\":\"3\"}]"
+-- >>> parseOutput "[[ \"8\", true ],[ \"3\", false ]]"
 -- [Output "8" True, Output "3" False]
 --
 parseOutput : String -> List Output
 parseOutput txt =
   let decoder = Json.Decode.list
-              <| object2 Output ("output" := string) ("passed" := bool)
+              <| tuple2 Output string bool
   in Result.withDefault [] <| decodeString decoder txt
 
 -- | merge outputs into spec list

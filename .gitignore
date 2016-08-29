@@ -3,3 +3,4 @@ elm-stuff/
 .*.vim
 .tmp*
 distribution
+tmp

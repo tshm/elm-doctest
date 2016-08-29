@@ -1,12 +1,14 @@
 {
   "name": "elm-doctest",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "doctest for elm",
   "main": "./distribution/index.js",
   "bin": {
     "elm-doctest": "./cli.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mock-browser": "^0.92.12"
+  },
   "devDependencies": {
     "elm": "^0.17.1",
     "eslint": "^3.4.0"
