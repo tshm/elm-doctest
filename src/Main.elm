@@ -35,10 +35,11 @@ update msg model =
           if List.isEmpty specs || String.isEmpty stdout
           then DocTest.Report "" False
           else DocTest.createReportFromOutput filename specs stdout
-      in (model, report <| createReport model.specs result)
+      in (model, report <|
+          {filename = result.filename, reports = createReport model.specs result})
 
 port evaluate : { src: String, runner: String } -> Cmd msg
-port report : DocTest.Report -> Cmd msg
+port report : { filename: String, reports: DocTest.Report } -> Cmd msg
 
 -- data models
 type alias TestResult = { stdout : String , filename : String }

@@ -43,20 +43,27 @@ const Elm = loadElm(path.resolve(__dirname, '../distribution/index.js'))
 const app = Elm.Main.worker()
 
 log('Starting elm-doctest ...')
-if ( proc.argv.length != 3 ) {
+if ( proc.argv.length < 3 ) {
 	console.error('need provide elm source file path')
 	process.exit( 1 )
 }
-const elmfile = proc.argv[ 2 ]
-try {
-	const elmsrc = fs.readFileSync( elmfile, 'utf8')
-	setTimeout(() => {  // for some reason, port does not work without delay.
-		app.ports.srccode.send( elmsrc )
-	}, 0)
-} catch(e) {
-	log(e)
-	process.exit(1)
-}
+
+let p = Promise
+p.resolve()
+let elmfile = ''
+proc.argv.slice(2).map( file => {
+	p = p.then(() => {
+		try {
+			elmfile = file
+			const elmsrc = fs.readFileSync( file, 'utf8')
+			setTimeout(() => {  // for some reason, port does not work without delay.
+				app.ports.srccode.send( elmsrc )
+			}, 0)
+		} catch(e) {
+			log(e)
+		}
+	})
+})
 
 app.ports.evaluate.subscribe( resource => {
 	if ( debug ) {
@@ -85,9 +92,9 @@ app.ports.evaluate.subscribe( resource => {
 })
 
 app.ports.report.subscribe( report => {
-	if ( report.text.length == 0 ) return
-	log( report.text )
-	if ( report.failed ) process.exit(1)
-	process.exit()
+	if ( report.reports.text.length == 0 ) return
+	log( report.reports.text )
+	if ( report.reports.failed ) process.exit(1)
+	p.resolve()
 })
 
