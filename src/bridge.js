@@ -19,8 +19,8 @@ const cwd = (() => {
 const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
 const runnerScript = path.resolve(cwd, './RunnerDoctestTempModule__.elm')
 
-function log( o ) {
-	console.log( o )
+function log(o) {
+	console.log(o)
 }
 if ( debug ) log('############## debug mode is ON ##############')
 
@@ -52,10 +52,10 @@ try {
 	const elmsrc = fs.readFileSync( elmfile, 'utf8')
 	setTimeout(() => {  // for some reason, port does not work without delay.
 		app.ports.srccode.send( elmsrc )
-	}, 1)
+	}, 0)
 } catch(e) {
 	log(e)
-	process.exit( 1 )
+	process.exit(1)
 }
 
 app.ports.evaluate.subscribe( resource => {
@@ -71,8 +71,8 @@ app.ports.evaluate.subscribe( resource => {
 		{ encoding: 'utf8'})
 	if ( debug ) log( stdout )
 
-	const Elm_runner = loadElm(`${runnerScript}.js`)
-	const app_runner = Elm_runner.RunnerDoctestTempModule__.worker()
+	const app_runner = loadElm(`${runnerScript}.js`)
+		.RunnerDoctestTempModule__.worker()
 	app_runner.ports.evalResults.subscribe( results => {
 		if ( debug ) log( results )
 		app.ports.result.send({ stdout: JSON.stringify(results), filename: elmfile })
