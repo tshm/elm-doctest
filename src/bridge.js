@@ -21,12 +21,10 @@ const cwd = (() => {
 		return './'
 	}
 })()
-const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
-const runnerScript = path.resolve(cwd, './RunnerDoctestTempModule__.elm')
+const testfilename = path.resolve( cwd, './DoctestTempModule__.elm')
+const runnerScript = path.resolve( cwd, './RunnerDoctestTempModule__.elm')
 
-function log(o) {
-	console.log(o)
-}
+function log(o) { console.log(o) }
 if ( debug ) log('############## debug mode is ON ##############')
 
 /** loads Elm compiled javascript
@@ -43,6 +41,8 @@ function loadElm( path ) {
 	return context.Elm
 }
 
+/** use generator to serialize the test runner for multiple files
+ */
 let elmfile = ''
 function* fileIterator( files ) {
 	for (let i = 0; i < files.length; i++) {
@@ -50,8 +50,9 @@ function* fileIterator( files ) {
 		try {
 			elmfile = file
 			const elmsrc = fs.readFileSync( file, 'utf8')
-			setTimeout(() => {  // for some reason, port does not work without delay.
-				log(`processing: ${file}`)
+			// for some reason, Elm port does not work without delay.
+			setTimeout(() => {
+				log(`\n processing: ${ file }`)
 				app.ports.srccode.send( elmsrc )
 			}, 1)
 			yield true
@@ -63,9 +64,13 @@ function* fileIterator( files ) {
 	return
 }
 
+// load main Elm script
 const Elm = loadElm( path.resolve(__dirname, '../distribution/index.js'))
 const app = Elm.Main.worker()
 
+/** receive evaluate message from Elm and elm-make and evaluate
+ * test cases, then send it back to Elm.
+ */
 app.ports.evaluate.subscribe( resource => {
 	if ( debug ) {
 		log('----------- evaluate called.')
@@ -75,23 +80,29 @@ app.ports.evaluate.subscribe( resource => {
 	// log('writing temporary source into file...')
 	fs.writeFileSync( testfilename, resource.src )
 	fs.writeFileSync( runnerScript, resource.runner )
-	const stdout = exec(`elm-make ${runnerScript} --output ${runnerScript}.js`,
-		{ encoding: 'utf8'})
+	const cmd = `elm-make ${ runnerScript } --output ${ runnerScript }.js`
+	const stdout = exec( cmd, { encoding: 'utf8'})
 	if ( debug ) log( stdout )
 
-	const app_runner = loadElm(`${runnerScript}.js`)
+	const app_runner = loadElm(`${ runnerScript }.js`)
 		.RunnerDoctestTempModule__.worker()
 	app_runner.ports.evalResults.subscribe( results => {
 		if ( debug ) log( results )
-		app.ports.result.send({ stdout: JSON.stringify(results), filename: elmfile })
+		const msg = { stdout: JSON.stringify( results ), filename: elmfile }
+		app.ports.result.send( msg )
 	})
-	if ( !debug && fs.existsSync( testfilename ) && fs.existsSync( runnerScript )) {
+	if ( !debug
+			&& fs.existsSync( testfilename )
+			&& fs.existsSync( runnerScript )) {
 		fs.unlinkSync( testfilename )
 		fs.unlinkSync( runnerScript )
-		fs.unlinkSync(`${runnerScript}.js`)
+		fs.unlinkSync(`${ runnerScript }.js`)
 	}
 })
 
+/** Receive report message from Elm and
+ * display results
+ */
 let returnValue = true
 app.ports.report.subscribe( report => {
 	if ( report.text.length == 0 ) return
@@ -100,6 +111,8 @@ app.ports.report.subscribe( report => {
 	runNext( fi )
 })
 
+/** Helper function to serialize the tests
+ */
 function runNext( fi ) {
 	const v = fi.next()
 	if ( debug ) log( v )
