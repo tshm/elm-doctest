@@ -24,6 +24,8 @@
     "test:main": "npm run cli -- src/DocTest.elm",
     "test:data": "npm run cli -- TestData.elm",
     "test:view": "npm run cli -- TestView.elm",
+    "test:ret0": "npm run cli -- TestView.elm TestData.elm",
+    "test:ret1": "npm run cli -- TestView.elm TestFail.elm",
     "test0": "node run cli -- Test0.elm"
   },
   "repository": {

@@ -6,6 +6,11 @@ const fs = require('fs')
 const proc = require('process')
 const exec = require('child_process').execSync
 const debug = proc.env.DEBUG || false
+const RETVAL = {
+	SUCCESS: 0,
+	FAIL: 1,
+	EXCEPTION: 2
+}
 
 // extract source folder from elm-package.json
 const cwd = (() => {
@@ -38,32 +43,28 @@ function loadElm( path ) {
 	return context.Elm
 }
 
-/** main */
-const Elm = loadElm(path.resolve(__dirname, '../distribution/index.js'))
-const app = Elm.Main.worker()
-
-log('Starting elm-doctest ...')
-if ( proc.argv.length < 3 ) {
-	console.error('need provide elm source file path')
-	process.exit( 1 )
-}
-
-let p = Promise
-p.resolve()
 let elmfile = ''
-proc.argv.slice(2).map( file => {
-	p = p.then(() => {
+function* fileIterator( files ) {
+	for (let i = 0; i < files.length; i++) {
+		let file = files[ i ]
 		try {
 			elmfile = file
 			const elmsrc = fs.readFileSync( file, 'utf8')
 			setTimeout(() => {  // for some reason, port does not work without delay.
+				log(`processing: ${file}`)
 				app.ports.srccode.send( elmsrc )
-			}, 0)
+			}, 1)
+			yield true
 		} catch(e) {
-			log(e)
+			log(`failed to run tests: ${ e }`)
+			process.exit( RETVAL.EXCEPTION )
 		}
-	})
-})
+	}
+	return
+}
+
+const Elm = loadElm( path.resolve(__dirname, '../distribution/index.js'))
+const app = Elm.Main.worker()
 
 app.ports.evaluate.subscribe( resource => {
 	if ( debug ) {
@@ -91,10 +92,29 @@ app.ports.evaluate.subscribe( resource => {
 	}
 })
 
+let returnValue = true
 app.ports.report.subscribe( report => {
-	if ( report.reports.text.length == 0 ) return
-	log( report.reports.text )
-	if ( report.reports.failed ) process.exit(1)
-	p.resolve()
+	if ( report.text.length == 0 ) return
+	log( report.text )
+	if ( report.failed ) returnValue = false
+	runNext( fi )
 })
+
+function runNext( fi ) {
+	const v = fi.next()
+	if ( debug ) log( v )
+	if ( v.done ) {
+		process.exit( returnValue ? RETVAL.SUCCESS : RETVAL.FAIL )
+	}
+}
+
+/** main */
+log('Starting elm-doctest ...')
+if ( proc.argv.length < 3 ) {
+	console.error('need provide elm source file path')
+	process.exit( RETVAL.EXCEPTION )
+}
+
+const fi = fileIterator( proc.argv.slice(2))
+runNext( fi )
 
