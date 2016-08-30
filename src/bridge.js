@@ -30,12 +30,8 @@ if ( debug ) log('############## debug mode is ON ##############')
  * and returns Elm object
  */
 function loadElm( path ) {
-	const MockBrowser = new require('mock-browser').mocks.MockBrowser
-	const browser = new MockBrowser()
-	const window = browser.getWindow()
-	const document = browser.getDocument()
 	const data = fs.readFileSync( path )
-	const context = { console, window, document, setInterval, setTimeout, setImmediate }
+	const context = { console, setInterval, setTimeout, setImmediate }
 	vm.runInNewContext( data, context, path )
 	return context.Elm
 }
