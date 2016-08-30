@@ -22,7 +22,6 @@ const cwd = (() => {
 	}
 })()
 const testfilename = path.resolve( cwd, './DoctestTempModule__.elm')
-const runnerScript = path.resolve( cwd, './RunnerDoctestTempModule__.elm')
 
 function log(o) { console.log(o) }
 if ( debug ) log('############## debug mode is ON ##############')
@@ -79,25 +78,15 @@ app.ports.evaluate.subscribe( resource => {
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
 	fs.writeFileSync( testfilename, resource.src )
-	fs.writeFileSync( runnerScript, resource.runner )
-	const cmd = `elm-make ${ runnerScript } --output ${ runnerScript }.js`
-	const stdout = exec( cmd, { encoding: 'utf8'})
+	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
 	if ( debug ) log( stdout )
-
-	const app_runner = loadElm(`${ runnerScript }.js`)
-		.RunnerDoctestTempModule__.worker()
-	app_runner.ports.evalResults.subscribe( results => {
-		if ( debug ) log( results )
-		const msg = { stdout: JSON.stringify( results ), filename: elmfile }
-		app.ports.result.send( msg )
-	})
-	if ( !debug
-			&& fs.existsSync( testfilename )
-			&& fs.existsSync( runnerScript )) {
+	const match = stdout.match(/^> (.+)/gm)
+	if ( !match ) return []
+	const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
+	if ( debug ) log( resultStr )
+	app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
+	if ( !debug && fs.existsSync( testfilename ))
 		fs.unlinkSync( testfilename )
-		fs.unlinkSync( runnerScript )
-		fs.unlinkSync(`${ runnerScript }.js`)
-	}
 })
 
 /** Receive report message from Elm and

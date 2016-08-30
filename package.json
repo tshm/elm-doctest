@@ -7,7 +7,6 @@
     "elm-doctest": "./cli.js"
   },
   "dependencies": {
-    "mock-browser": "^0.92.12"
   },
   "devDependencies": {
     "elm": "^0.17.1",

@@ -58,18 +58,11 @@ collectSpecs txt =
 -- elm-repl requires tailing back slash for handling multi-line statements
 evaluationScript : String
 evaluationScript = """
-port module RunnerDoctestTempModule__ exposing (..)
 import DoctestTempModule__
-import VirtualDom
-main : Program Never
-main =
-  VirtualDom.programWithFlags
-    { init = always <| (0, evalResults DoctestTempModule__.doctestResults_)
-    , update = always <| always <| (0, Cmd.none)
-    , subscriptions = always <| Sub.none
-    , view = always <| VirtualDom.text ""
-    }
-port evalResults : List (String, Bool) -> Cmd msg
+import Json.Encode exposing (object, list, bool, string, encode)
+encode 0 <| list <| \\
+  List.map (\\(o,r) -> object [("passed", bool r), ("output", string o)])\\
+  DoctestTempModule__.doctestResults_
 """
 
 -- | create temporary module source from original elm source code
@@ -126,16 +119,16 @@ createReport filename specs =
 -- >>> parseOutput "[]"
 -- []
 --
--- >>> parseOutput "[[ \"8\", true ]]"
+-- >>> parseOutput "[{\"passed\":true, \"output\":\"8\"}]"
 -- [Output "8" True]
 --
--- >>> parseOutput "[[ \"8\", true ],[ \"3\", false ]]"
+-- >>> parseOutput "[{\"passed\":true, \"output\":\"8\"},{\"passed\":false, \"output\":\"3\"}]"
 -- [Output "8" True, Output "3" False]
 --
 parseOutput : String -> List Output
 parseOutput txt =
   let decoder = Json.Decode.list
-              <| tuple2 Output string bool
+              <| object2 Output ("output" := string) ("passed" := bool)
   in Result.withDefault [] <| decodeString decoder txt
 
 -- | merge outputs into spec list
