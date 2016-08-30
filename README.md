@@ -8,23 +8,20 @@ doctest runner against Elm-lang source files
 ```shell
 npm install elm-doctest
 ```
-It depends on `elm` runtime and assumes that `elm-make` is available
+It depends on `elm` and assumes that `elm-make` and `elm-repl` are available
 either via systemwide installation or npm module installation.
-Make sure `elm-make` succeeds with your elm source files before
-running `elm-doctest`.
+Make sure `elm-make` succeeds with your elm source files.
 
 ## how does it work?
-It utilizes `elm-make` and nodejs runtime for elm -> js compilation and
-expression evaluation and compare the values against the expected value.
-(It does not comapre stringified values like haskell doctest does with
+It utilizes `elm-repl` for expression evaluation and compare the values
+against the expected value.
+(It does not comapre stringified values like haskell doctest does via
 GHCi outputs.)
 
 It only evaluates the expressions that follows `-- >>>`
 (i.e. Elm comment symbol followed by space and three LT chars
-then the expression)
-and the expression on the next line after `-- ` for the
-expected value.
-It does not support multi-line expression at this moment.
+until end of the line)
+and the expression on the next line after `-- `.
 
 For example, if the comment states:
 ```Elm
@@ -79,6 +76,13 @@ expected: "Konnichiwa World"
  but got: "Hello World"
 Examples: 3  Failures: 1
 ```
+
+## limitation
+
+As it utilizes `elm-repl`, the script must run inside
+`elm-repl`.
+For example, code which imports `elm-lang/navigation@1.0.0`
+module cannot be tested.
 
 
 ## license
