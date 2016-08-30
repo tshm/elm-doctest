@@ -1,4 +1,4 @@
-[![Circle CI](https://circleci.com/gh/tshm/elm-doctest.svg?style=svg)](https://circleci.com/gh/tshm/elm-doctest)
+[![Build Status](https://semaphoreci.com/api/v1/tshm/elm-doctest/branches/master/badge.svg)](https://semaphoreci.com/tshm/elm-doctest)
 [![npm version](https://badge.fury.io/js/elm-doctest.svg)](https://badge.fury.io/js/elm-doctest)
 
 # elm-doctest
