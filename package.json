@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "doctest for elm",
   "main": "./distribution/index.js",
   "bin": {
