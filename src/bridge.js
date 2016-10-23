@@ -1,3 +1,4 @@
+'use strict'
 /** allow to use Elm from nodejs...
  */
 const path = require('path')
