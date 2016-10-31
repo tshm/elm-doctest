@@ -19,13 +19,8 @@
     "lint": "eslint src/bridge.js",
     "pretest": "npm run lint && npm run build",
     "cli": "node ./cli.js",
-    "test": "npm run test:main && npm run test:data && npm run test:view ",
-    "test:main": "npm run cli -- src/DocTest.elm",
-    "test:data": "npm run cli -- TestData.elm",
-    "test:view": "npm run cli -- TestView.elm",
-    "test:ret0": "npm run cli -- TestView.elm TestData.elm",
-    "test:ret1": "npm run cli -- TestView.elm TestFail.elm",
-    "test0": "node run cli -- Test0.elm"
+    "test": "npm run cli -- src/DocTest.elm test/TestData.elm test/TestView.elm",
+    "test:fail": "npm run cli -- TestView.elm TestFail.elm"
   },
   "repository": {
     "type": "git",

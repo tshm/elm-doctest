@@ -4,7 +4,8 @@
     "repository": "http://github.com/tshm/elm-doctest.git",
     "license": "MIT",
     "source-directories": [
-        "./src"
+        "./src",
+        "./test"
     ],
     "exposed-modules": [],
     "dependencies": {

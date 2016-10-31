@@ -75,7 +75,7 @@ encode 0 <| list <| \\
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
-    re = regex "^(\\w*\\s*)module\\s+(\\w)+\\s+?exposing\\s+\\([^)]+\\)"
+    re = regex "^(\\w*\\s*)module\\s+([\\.\\w])+\\s+?exposing\\s+\\([^)]+\\)"
     newheader = "module DoctestTempModule__ exposing (doctestResults_)"
     isport match = (List.head match.submatches) == Just Nothing
     moduledecr match =

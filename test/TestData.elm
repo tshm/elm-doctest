@@ -1,5 +1,11 @@
 module TestData exposing (..)
 
+import TestData.TestFail as F
+
+-- |
+-- >>> F.greetingTo "test"
+-- "Hello test"
+
 -- |
 -- >>> add 3 5
 -- 8

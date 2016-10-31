@@ -1,4 +1,4 @@
-module TestFail exposing (..)
+module TestData.TestFail exposing (..)
 
 -- |
 -- >>> add 3 5
