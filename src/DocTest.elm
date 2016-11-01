@@ -32,28 +32,20 @@ newSpec : String -> String -> Int -> Spec
 newSpec test expected line = Spec test expected line "" False
 
 -- | This will correct specs from given Elm source code
---
--- >>> collectSpecs "-- >>> test\n-- 8"
--- [newSpec "test" "8" 1]
---
--- >>> collectSpecs "-- >>> test\n-- 8"
--- [Spec "test" "8" 1 "" False]
---
--- >>> collectSpecs "-- >>> test\n-- 8\n-- >>> xxx\n-- 9"
--- [(newSpec "test" "8" 1), (newSpec "xxx" "9" 3)]
---
--- >>> collectSpecs "-- >>> test\n-- 8\n--\n-- >>> xxx\n-- 9"
--- [(newSpec "test" "8" 1), (newSpec "xxx" "9" 4)]
---
 collectSpecs : String -> List Spec
 collectSpecs txt =
   let
-    re = regex "--\\s*>>>\\s*(.+)[\\r\\n]--\\s*([^\\n\\r]+)"
-    extract m = case m.submatches of
-      (Just test)::(Just expect)::_ -> newSpec test expect (countLines m)
-      otherwise -> newSpec "" "" (countLines m)
+    blockRe = regex "(--[ \\t]+>>>[^\\r\\n]*[\\r\\n]+)+(--[ \\t]+[^|>][^\\r\\n]*[\\r\\n]+)+"
+    lineRe = regex "--(\\s+>>>)?(.+)"
+    extract m =
+      let ex mm spec =
+        case mm.submatches of
+          (Just _)::(Just t)::_ -> { spec | test = spec.test ++ "\n " ++ t }
+          (Nothing)::(Just e)::_ -> { spec | expected = spec.expected ++ "\n " ++ e }
+          _ -> spec
+      in find All lineRe m.match |> List.foldl ex (newSpec "" "" (countLines m))
     countLines m = List.length <| String.lines <| String.left m.index txt
-  in find All re txt |> List.map extract 
+  in find All blockRe txt |> List.map extract
 
 -- elm-repl requires tailing back slash for handling multi-line statements
 evaluationScript : String
@@ -66,12 +58,6 @@ encode 0 <| list <| \\
 """
 
 -- | create temporary module source from original elm source code
--- >>> createTempModule "module Test exposing (..)" []
--- "module DoctestTempModule__ exposing (doctestResults_)\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = []"
---
--- >>> createTempModule "" [newSpec "3+5" "8" 1] |> String.split "\n" |> List.reverse |> List.head
--- Just "doctestResults_ = [( (toString (3+5)), (3+5)==(8) )]"
---
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
@@ -84,7 +70,8 @@ createTempModule src specs =
         _ -> newheader
     newmodule = replace (AtMost 1) re moduledecr src
     testDecr = "\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = "
-    footer = "[" ++ (specs |> List.map evalSpec |> String.join ", ") ++ "]"
+    footer = "\n  ["
+      ++ (specs |> List.map evalSpec |> String.join "\n  ,") ++ "\n  ]"
     evalSpec {test, expected} = String.join ""
       ["( (toString (", test ,")), (", test, ")==(", expected, ") )"]
   in newmodule ++ testDecr ++ footer
