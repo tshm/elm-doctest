@@ -5,7 +5,7 @@ const path = require('path')
 const vm = require('vm')
 const fs = require('fs')
 const proc = require('process')
-const exec = require('child_process').execSync
+const spawn = require('child_process').spawnSync
 const debug = proc.env.DEBUG || false
 const RETVAL = {
 	SUCCESS: 0,
@@ -40,17 +40,33 @@ function loadElm( path ) {
 /** use generator to serialize the test runner for multiple files
  */
 let elmfile = ''
-function* fileIterator( files ) {
-	for (let i = 0; i < files.length; i++) {
-		let file = files[ i ]
+function* fileIterator( pretest, watch ) {
+	while ( watch || fileQueue.length > 0 ) {
+		if ( watch && fileQueue.length == 0 ) {
+			yield true
+			continue
+		}
+		elmfile = fileQueue.shift()
+		log(`elmfile: ${ elmfile }`)
 		try {
-			elmfile = file
-			const elmsrc = fs.readFileSync( file, 'utf8')
-			// for some reason, Elm port does not work without delay.
-			setTimeout(() => {
-				log(`\n processing: ${ file }`)
-				app.ports.srccode.send( elmsrc )
-			}, 1)
+			let run_repl = true
+			if ( pretest.length > 0 ) {
+				const cmd = pretest[0]
+				const args = pretest.slice(1)
+				const { stdout, stderr, status } = spawn(cmd, args, { encoding: 'utf8'})
+				if ( stdout ) log(`pretest: ${ stdout }`)
+				if ( stderr ) log(`pretest err: ${ stderr }`)
+				log(`pretest status: ${ status }`)
+				if ( status != 0 ) run_repl = false
+			}
+			if ( run_repl ) {
+				const elmsrc = fs.readFileSync( elmfile, 'utf8')
+				// for some reason, Elm port does not work without delay.
+				setTimeout(() => {
+					log(`\n processing: ${ elmfile }`)
+					app.ports.srccode.send( elmsrc )
+				}, 1)
+			}
 			yield true
 		} catch(e) {
 			log(`failed to run tests: ${ e }`)
@@ -75,13 +91,17 @@ app.ports.evaluate.subscribe( resource => {
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
 	fs.writeFileSync( testfilename, resource.src )
-	const stdout = exec('elm-repl', { input: resource.runner, encoding: 'utf8'})
+	const { stdout, status } = spawn(elm_repl, [], { input: resource.runner, encoding: 'utf8'})
 	if ( debug ) log( stdout )
-	const match = stdout.match(/^> (.+)/gm)
-	if ( !match ) return []
-	const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
-	if ( debug ) log( resultStr )
-	app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
+	if ( status != 0 ) {
+		log(`elm-repl exited with ${ status }`)
+	} else {
+		const match = stdout.match(/^> (.+)/gm)
+		if ( !match ) return []
+		const resultStr = match[0].replace(/[^"]*(".+")( : .*)?/, '$1')
+		if ( debug ) log( resultStr )
+		app.ports.result.send({ stdout: JSON.parse( resultStr ), filename: elmfile })
+	}
 	if ( !debug && fs.existsSync( testfilename ))
 		fs.unlinkSync( testfilename )
 })
@@ -108,12 +128,51 @@ function runNext( fi ) {
 }
 
 /** main */
-log('Starting elm-doctest ...')
-if ( proc.argv.length < 3 ) {
-	console.error('need provide elm source file path')
-	process.exit( RETVAL.EXCEPTION )
+const optSpec = {
+	boolean: ['help', 'version', 'watch'],
+	string: ['elm-repl-path', 'pretest'],
+	alias: {h: 'help', v: 'version', w: 'watch'}
+}
+const opts = require('minimist')( proc.argv.slice(2), optSpec )
+if ( debug ) console.log('options:', opts )
+console.log('options:', opts )
+
+if ( opts.version || opts.help || !opts._ ) {
+	const version = require('../package.json').version
+	log(`elm-doctest ${ version }`)
+	log('')
+	log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH] FILES...')
+	log('  run doctest against given Elm files')
+	log('')
+	log('Available options:')
+	log('  -h,--help\t\t\t'
+		+ 'Show this help text')
+	log('  --pretest CMD\t\t'
+		+ 'command to run before doc-test')
+	log('  --elm-repl-path PATH\t\t'
+		+ 'Path to elm-repl executable')
+	log('  -w,--watch\t\t\t'
+		+ 'Watch and run tests when target files get updated')
+	process.exit( RETVAL.SUCCESS )
 }
 
-const fi = fileIterator( proc.argv.slice(2))
+const elm_repl = opts['elm-repl-path'] || 'elm-repl'
+
+log('Starting elm-doctest ...')
+
+let fileQueue = Object.assign([], opts._ )
+const pretest = opts.pretest ? opts.pretest.split(' ') : []
+const watch = opts.watch
+
+const chokidar = require('chokidar')
+console.log('start watching...', fileQueue )
+chokidar.watch( fileQueue ).on('change', (path, stats) => {
+	if ( stats.size == 0 ) return
+	console.log(`\nfile has changed...`)
+	fileQueue.push( path )
+	runNext( fi )
+})
+
+const fi = fileIterator( pretest, watch )
 runNext( fi )
 
