@@ -49,16 +49,15 @@ function* fileIterator( pretest, watch ) {
 		elmfile = fileQueue.shift()
 		log(`elmfile: ${ elmfile }`)
 		try {
-			let run_repl = true
-			if ( pretest.length > 0 ) {
+			const run_repl = ( pretest.length == 0 ) || (() => {
 				const cmd = pretest[0]
 				const args = pretest.slice(1)
 				const { stdout, stderr, status } = spawn(cmd, args, { encoding: 'utf8'})
 				if ( stdout ) log(`pretest: ${ stdout }`)
 				if ( stderr ) log(`pretest err: ${ stderr }`)
 				log(`pretest status: ${ status }`)
-				if ( status != 0 ) run_repl = false
-			}
+				return status == 0
+			})()
 			if ( run_repl ) {
 				const elmsrc = fs.readFileSync( elmfile, 'utf8')
 				// for some reason, Elm port does not work without delay.
@@ -127,42 +126,46 @@ function runNext( fi ) {
 	}
 }
 
+function parseOpt( argv ) {
+	const optSpec = {
+		boolean: ['help', 'version', 'watch'],
+		string: ['elm-repl-path', 'pretest'],
+		alias: {h: 'help', v: 'version', w: 'watch'}
+	}
+	const opts = require('minimist')( argv, optSpec )
+	if ( debug ) console.log('options:', opts )
+
+	if ( opts.version || opts.help || !opts._ ) {
+		const version = require('../package.json').version
+		log(`elm-doctest ${ version }`)
+		log('')
+		log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH] '
+			+ '                   [--pretest CMD] FILES...')
+		log('  run doctest against given Elm files')
+		log('')
+		log('Available options:')
+		log('  -h,--help\t\t\t'
+			+ 'Show this help text')
+		log('  --pretest CMD\t\t'
+			+ 'command to run before doc-test')
+		log('  --elm-repl-path PATH\t\t'
+			+ 'Path to elm-repl executable')
+		log('  -w,--watch\t\t\t'
+			+ 'Watch and run tests when target files get updated')
+		process.exit( RETVAL.SUCCESS )
+	}
+
+	return {
+		elm_repl: opts['elm-repl-path'] || 'elm-repl',
+		fileQueue: opts._,
+		pretest: opts.pretest ? opts.pretest.split(' ') : [],
+		watch: opts.watch
+	}
+}
+
 /** main */
-const optSpec = {
-	boolean: ['help', 'version', 'watch'],
-	string: ['elm-repl-path', 'pretest'],
-	alias: {h: 'help', v: 'version', w: 'watch'}
-}
-const opts = require('minimist')( proc.argv.slice(2), optSpec )
-if ( debug ) console.log('options:', opts )
-console.log('options:', opts )
-
-if ( opts.version || opts.help || !opts._ ) {
-	const version = require('../package.json').version
-	log(`elm-doctest ${ version }`)
-	log('')
-	log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH] FILES...')
-	log('  run doctest against given Elm files')
-	log('')
-	log('Available options:')
-	log('  -h,--help\t\t\t'
-		+ 'Show this help text')
-	log('  --pretest CMD\t\t'
-		+ 'command to run before doc-test')
-	log('  --elm-repl-path PATH\t\t'
-		+ 'Path to elm-repl executable')
-	log('  -w,--watch\t\t\t'
-		+ 'Watch and run tests when target files get updated')
-	process.exit( RETVAL.SUCCESS )
-}
-
-const elm_repl = opts['elm-repl-path'] || 'elm-repl'
-
+const { elm_repl, fileQueue, pretest, watch } = parseOpt( proc.argv.slice(2))
 log('Starting elm-doctest ...')
-
-let fileQueue = Object.assign([], opts._ )
-const pretest = opts.pretest ? opts.pretest.split(' ') : []
-const watch = opts.watch
 
 const chokidar = require('chokidar')
 console.log('start watching...', fileQueue )
