@@ -38,8 +38,16 @@ If value reported by `elm-repl` is `True` then test passes, fail otherwise.
 
 ## usage
 
-```js
-elm-doctest ModuleTobeTested.elm
+```
+Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH]
+                   [--pretest CMD] FILES...
+  run doctest against given Elm files
+
+Available options:
+  -h,--help             Show this help text
+  --pretest CMD         command to run before doc-test
+  --elm-repl-path PATH  Path to elm-repl executable
+  -w,--watch            Watch and run tests when target files get updated
 ```
 
 ## example
@@ -71,8 +79,12 @@ removeZeros = List.filter (\x -> x /= 0)
 evaluation `elm-doctest ModuleTobeTested.elm` outputs
 ```
 Starting elm-doctest ...
-### Failure in Test.elm:10: expression 'greetingTo "World"'
-expected: "Konnichiwa World"
+
+ processing: test/TestData/TestFail.elm
+### Failure in test/TestData/TestFail.elm:10: expression
+  greetingTo "World"
+expected:
+  "Konnichiwa World"
  but got: "Hello World"
 Examples: 3  Failures: 1
 ```
@@ -83,6 +95,10 @@ As it utilizes `elm-repl`, the script must run inside
 `elm-repl`.
 For example, code which imports `elm-lang/navigation@1.0.0`
 module cannot be tested.
+
+Also, make sure elm-make runs without error.
+You can auto run elm-make by using `--pretest` command-line
+option.
 
 
 ## license
