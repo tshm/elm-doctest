@@ -95,8 +95,8 @@ createReport filename specs =
     reportFailure {test, expected, line, passed, output} = String.join "\n"
       [ "### Failure in " ++ filename ++ ":" ++ (toString line)
        ++ ": expression " ++ test
-      , "expected: " ++ expected
-      , " but got: " ++ output
+      , "expected: " ++ (String.trim expected)
+      , " but got: " ++ (String.trim output)
       , ""
       ]
   in Report (String.join "\n" reports ++ summary) (not <| List.isEmpty failures)

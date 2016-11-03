@@ -83,8 +83,7 @@ Starting elm-doctest ...
  processing: test/TestData/TestFail.elm
 ### Failure in test/TestData/TestFail.elm:10: expression
   greetingTo "World"
-expected:
-  "Konnichiwa World"
+expected: "Konnichiwa World"
  but got: "Hello World"
 Examples: 3  Failures: 1
 ```
