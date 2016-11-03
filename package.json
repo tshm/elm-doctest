@@ -20,7 +20,7 @@
     "pretest": "npm run lint && npm run build",
     "cli": "node ./cli.js",
     "test": "npm run cli -- src/DocTest.elm test/TestData.elm test/TestView.elm",
-    "test:fail": "npm run cli -- TestView.elm TestFail.elm"
+    "test:fail": "npm run cli -- test/TestView.elm test/TestData/TestFail.elm || echo"
   },
   "repository": {
     "type": "git",

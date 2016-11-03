@@ -38,6 +38,7 @@ function loadElm( path ) {
 }
 
 /** use generator to serialize the test runner for multiple files
+ * if watch is true, then it does not quit even if queue is empty.
  */
 let elmfile = ''
 function* fileIterator( pretest, watch ) {
@@ -126,6 +127,8 @@ function runNext( fi ) {
 	}
 }
 
+/** parse commandline options
+ */
 function parseOpt( argv ) {
 	const optSpec = {
 		boolean: ['help', 'version', 'watch'],
@@ -135,23 +138,26 @@ function parseOpt( argv ) {
 	const opts = require('minimist')( argv, optSpec )
 	if ( debug ) console.log('options:', opts )
 
+	// show usage/help message
 	if ( opts.version || opts.help || !opts._ ) {
-		const version = require('../package.json').version
-		log(`elm-doctest ${ version }`)
-		log('')
-		log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH]')
-		log('                   [--pretest CMD] FILES...')
-		log('  run doctest against given Elm files')
-		log('')
-		log('Available options:')
-		log('  -h,--help\t\t'
-			+ 'Show this help text')
-		log('  --pretest CMD\t\t'
-			+ 'command to run before doc-test')
-		log('  --elm-repl-path PATH\t'
-			+ 'Path to elm-repl executable')
-		log('  -w,--watch\t\t'
-			+ 'Watch and run tests when target files get updated')
+		(function showHelpMessage() {
+			const version = require('../package.json').version
+			log(`elm-doctest ${ version }`)
+			log('')
+			log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH]')
+			log('                   [--pretest CMD] FILES...')
+			log('  run doctest against given Elm files')
+			log('')
+			log('Available options:')
+			log('  -h,--help\t\t'
+				+ 'Show this help text')
+			log('  --pretest CMD\t\t'
+				+ 'command to run before doc-test')
+			log('  --elm-repl-path PATH\t'
+				+ 'Path to elm-repl executable')
+			log('  -w,--watch\t\t'
+				+ 'Watch and run tests when target files get updated')
+		})()
 		process.exit( RETVAL.SUCCESS )
 	}
 
@@ -167,9 +173,11 @@ function parseOpt( argv ) {
 const { elm_repl, fileQueue, pretest, watch } = parseOpt( proc.argv.slice(2))
 log('Starting elm-doctest ...')
 
+// persist/watch files if `--watch` option was given
 if ( watch ) {
 	const chokidar = require('chokidar')
 	console.log('start watching...', fileQueue )
+
 	chokidar.watch( fileQueue ).on('change', (path, stats) => {
 		if ( stats.size == 0 ) return
 		console.log(`\nfile has changed...`)
@@ -178,6 +186,7 @@ if ( watch ) {
 	})
 }
 
+// kick-off the test for the 1st time
 const fi = fileIterator( pretest, watch )
 runNext( fi )
 
