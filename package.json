@@ -33,6 +33,8 @@
   },
   "homepage": "https://github.com/tshm/elm-doctest#readme",
   "keywords": [
+    "cli",
+    "tool",
     "elm",
     "doctest"
   ]
