@@ -1,5 +1,5 @@
 {
-    "version": "0.2.0",
+    "version": "0.2.1",
     "summary": "doctest for elm",
     "repository": "http://github.com/tshm/elm-doctest.git",
     "license": "MIT",
