@@ -1,23 +1,22 @@
 {
   "name": "elm-doctest",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "doctest for elm",
   "main": "./distribution/index.js",
   "bin": {
     "elm-doctest": "./cli.js"
   },
   "devDependencies": {
-    "chokidar": "^1.6.1",
     "elm": "^0.17.1",
     "eslint": "^3.4.0",
-    "minimist": "^1.2.0"
+    "npm-check": "^5.4.0"
   },
   "scripts": {
-    "prebuild": "elm-package install --yes",
+    "prebuild": "npm install && elm-package install --yes",
     "build": "elm-make --yes --warn src/Main.elm --output ./distribution/index.js",
-    "prepublish": "npm run build",
+    "check": "npm-check -s -p",
     "lint": "eslint src/bridge.js",
-    "pretest": "npm run lint && npm run build",
+    "pretest": "npm run build && npm run check && npm run lint",
     "cli": "node ./cli.js",
     "test": "npm run cli -- src/DocTest.elm test/TestData.elm test/TestView.elm",
     "test:fail": "npm run cli -- test/TestView.elm test/TestData/TestFail.elm || echo"
@@ -37,5 +36,9 @@
     "tool",
     "elm",
     "doctest"
-  ]
+  ],
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "minimist": "^1.2.0"
+  }
 }
