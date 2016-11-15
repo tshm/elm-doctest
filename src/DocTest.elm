@@ -115,7 +115,9 @@ createReport filename specs =
 parseOutput : String -> List Output
 parseOutput txt =
   let decoder = Json.Decode.list
-              <| object2 Output ("output" := string) ("passed" := bool)
+              <| Json.Decode.map2 Output
+                (Json.Decode.field "output" string)
+                (Json.Decode.field "passed" bool)
   in Result.withDefault [] <| decodeString decoder txt
 
 -- | merge outputs into spec list

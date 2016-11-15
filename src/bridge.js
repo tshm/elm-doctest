@@ -91,7 +91,10 @@ app.ports.evaluate.subscribe( resource => {
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
 	fs.writeFileSync( testfilename, resource.src )
-	const { stdout, status } = spawn(elm_repl, [], { input: resource.runner, encoding: 'utf8'})
+	const { stdout, status, error } = spawn(elm_repl, [], { input: resource.runner, encoding: 'utf8'})
+	if ( error ) {
+		log(`elm-repl failed to run:\n ${ error }`)
+	}
 	if ( debug ) log( stdout )
 	if ( status != 0 ) {
 		log(`elm-repl exited with ${ status }`)

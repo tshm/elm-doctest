@@ -7,7 +7,7 @@
     "elm-doctest": "./cli.js"
   },
   "devDependencies": {
-    "elm": "^0.17.1",
+    "elm": "^0.18.0",
     "eslint": "^3.4.0",
     "npm-check": "^5.4.0"
   },
