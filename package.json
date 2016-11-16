@@ -1,13 +1,13 @@
 {
   "name": "elm-doctest",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "doctest for elm",
   "main": "./distribution/index.js",
   "bin": {
     "elm-doctest": "./cli.js"
   },
   "devDependencies": {
-    "elm": "^0.17.1",
+    "elm": "^0.18.0",
     "eslint": "^3.4.0",
     "npm-check": "^5.4.0"
   },

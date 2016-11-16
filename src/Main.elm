@@ -2,15 +2,13 @@ port module Main exposing (..)
 
 import DocTest
 import String
-import VirtualDom
 
-main : Program Never
+main : Program Never Model Msg
 main =
-  VirtualDom.programWithFlags
-    { init = \_ -> ({ specs = [] }, Cmd.none)
+  Platform.program
+    { init = ({ specs = [] }, Cmd.none)
     , update = update
     , subscriptions = subscriptions
-    , view = \_ -> VirtualDom.text ""
     }
 
 type Msg

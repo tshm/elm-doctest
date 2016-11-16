@@ -68,7 +68,9 @@ createTempModule src specs =
       case match.submatches of
         (Just str)::_ -> str ++ newheader
         _ -> newheader
-    newmodule = replace (AtMost 1) re moduledecr src
+    replacedSrc = replace (AtMost 1) re moduledecr src
+    -- even supports the case where there is no module declaration
+    newmodule = if replacedSrc == src then newheader ++ src else replacedSrc
     testDecr = "\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = "
     footer = "\n  ["
       ++ (specs |> List.map evalSpec |> String.join "\n  ,") ++ "\n  ]"
@@ -115,7 +117,9 @@ createReport filename specs =
 parseOutput : String -> List Output
 parseOutput txt =
   let decoder = Json.Decode.list
-              <| object2 Output ("output" := string) ("passed" := bool)
+              <| Json.Decode.map2 Output
+                (Json.Decode.field "output" string)
+                (Json.Decode.field "passed" bool)
   in Result.withDefault [] <| decodeString decoder txt
 
 -- | merge outputs into spec list
