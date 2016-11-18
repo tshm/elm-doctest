@@ -9,7 +9,8 @@
   "devDependencies": {
     "elm": "^0.18.0",
     "eslint": "^3.4.0",
-    "npm-check": "^5.4.0"
+    "npm-check": "^5.4.0",
+    "shelljs": "^0.7.5"
   },
   "scripts": {
     "prebuild": "npm install && elm-package install --yes",
@@ -17,9 +18,8 @@
     "check": "npm-check -s -p",
     "lint": "eslint src/bridge.js",
     "pretest": "npm run build && npm run check && npm run lint",
-    "cli": "node ./cli.js",
-    "test": "npm run cli -- src/DocTest.elm test/TestData.elm test/TestView.elm",
-    "test:fail": "npm run cli -- test/TestView.elm test/TestData/TestFail.elm || echo"
+    "test0": "node ./test/run.js",
+    "test": "npm run test0"
   },
   "repository": {
     "type": "git",
