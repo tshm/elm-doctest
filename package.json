@@ -18,7 +18,7 @@
     "lint": "eslint src/bridge.js",
     "pretest": "npm run build && npm run check && npm run lint",
     "cli": "node ./cli.js",
-    "test": "npm run cli -- src/DocTest.elm test/TestData.elm test/TestView.elm",
+    "test": "npm run cli -- src/DocTest.elm test/ParamTest.elm test/ParamTest2.elm  test/RandomTest.elm test/TestData.elm test/TestView.elm",
     "test:fail": "npm run cli -- test/TestView.elm test/TestData/TestFail.elm || echo"
   },
   "repository": {
