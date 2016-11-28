@@ -183,7 +183,7 @@ if ( watch ) {
 
 	chokidar.watch( fileQueue ).on('change', (path, stats) => {
 		if ( stats.size == 0 ) return
-		console.log(`\nfile has changed...`)
+		console.log('\nfile has changed...')
 		fileQueue.push( path )
 		runNext( fi )
 	})
