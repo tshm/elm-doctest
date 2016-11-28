@@ -2,7 +2,8 @@
 [![npm version](https://badge.fury.io/js/elm-doctest.svg)](https://badge.fury.io/js/elm-doctest)
 
 # elm-doctest
-doctest runner against Elm-lang source files
+[doctest](https://en.wikipedia.org/wiki/Docstring)
+runner against Elm-lang source files
 
 ## installation
 ```shell
