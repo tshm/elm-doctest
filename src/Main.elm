@@ -30,9 +30,10 @@ update msg model =
 
     NewResult result ->
       let
-        createReport specs { filename, stdout } =
-          if List.isEmpty specs || String.isEmpty stdout
-          then DocTest.Report "" False
+        createReport specs { filename, stdout, failed } =
+          if failed then DocTest.Report stdout True
+          else if List.isEmpty specs    then DocTest.Report "" False
+          else if String.isEmpty stdout then DocTest.Report "" False
           else DocTest.createReportFromOutput filename specs stdout
       in (model, report <| createReport model.specs result)
 
@@ -41,7 +42,7 @@ port report : DocTest.Report -> Cmd msg
 
 -- data models
 type alias SourceCode = { code : String , filename : String }
-type alias TestResult = { stdout : String , filename : String }
+type alias TestResult = { stdout : String , filename : String, failed : Bool }
 type alias Model =
   { specs : List DocTest.Spec
   }

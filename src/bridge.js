@@ -106,22 +106,31 @@ app.ports.evaluate.subscribe(resource => {
   if (resource.src.length === 0) return
   // log('writing temporary source into file...')
   fs.writeFileSync(testfilename, resource.src)
-  if (checkElmMake(testfilename, resource.filename) !== 0) return
-  const { stdout, status, error } = spawn(elm_repl, [], {input: resource.runner, encoding: 'utf8'})
-  if (error) {
-    log(`elm-repl failed to run:\n ${error}`)
+  try {
+    if (checkElmMake(testfilename, resource.filename) !== 0) {
+      throw new Error('elm-make exited with error')
+    }
+    const { stdout, status, error } = spawn(elm_repl, [], {input: resource.runner, encoding: 'utf8'})
+    if (error) {
+      log(`elm-repl failed to run:\n ${error}`)
+    }
+    if (debug) log(stdout)
+    if (status !== 0) {
+      throw new Error(`elm-repl exited with ${status}`)
+    } else {
+      const match = stdout.match(/^> (.+)/gm)
+      if (!match) {
+        throw new Error('elm-repl did not produce output')
+      }
+      const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
+      if (debug) log(resultStr)
+      app.ports.result.send({ stdout: JSON.parse(resultStr), filename: elmfile, failed: false })
+    }
+  } catch (e) {
+    app.ports.result.send({ stdout: e.message, filename: elmfile, failed: true })
+  } finally {
+    if (!debug && fs.existsSync(testfilename)) fs.unlinkSync(testfilename)
   }
-  if (debug) log(stdout)
-  if (status !== 0) {
-    log(`elm-repl exited with ${status}`)
-  } else {
-    const match = stdout.match(/^> (.+)/gm)
-    if (!match) return []
-    const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
-    if (debug) log(resultStr)
-    app.ports.result.send({ stdout: JSON.parse(resultStr), filename: elmfile })
-  }
-  if (!debug && fs.existsSync(testfilename)) fs.unlinkSync(testfilename)
 })
 
 /** Receive report message from Elm and
