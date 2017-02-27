@@ -39,22 +39,20 @@ collectSpecs src =
     expected = "(\\2(?!(-}|>>>)).+\\3)+"
     blockRe = regex (evaluation ++ expected)
     lineRe = regex "(?:(?:--)?[\\t ]*)?(>>>)?(.+)"
-    replacer m = extract m
-      |> (\{ test, expected, line } ->
-        let
-          num = toString line
-        in
-          String.join ""
-            [ "expression_"
-            , num
-            , " = "
-            , test
-            , "expected_"
-            , num
-            , " = "
-            , expected
-            ]
-       )
+    makeReplacementStr { test, expected, line } =
+      let
+        num = toString line
+      in
+        String.join ""
+          [ "expression_"
+          , num
+          , " = "
+          , test
+          , "expected_"
+          , num
+          , " = "
+          , expected
+          ]
     extract m =
       let
         ex mm spec =
@@ -70,7 +68,7 @@ collectSpecs src =
         |> \spec -> { spec | test = spec.test, expected = spec.expected }
     countLines m = List.length <| String.lines <| String.left m.index src
   in
-    ( replace All blockRe replacer src
+    ( replace All blockRe (makeReplacementStr << extract) src
     , find All blockRe src |> List.map extract
     )
 

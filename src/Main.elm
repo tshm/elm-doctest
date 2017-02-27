@@ -12,18 +12,19 @@ main =
     }
 
 type Msg
-  = InputSourceCode String
+  = Input SourceCode
   | NewResult TestResult
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputSourceCode original ->
-      let 
-        (source, specs) = DocTest.collectSpecs original
+    Input { code, filename } ->
+      let
+        (testcode, specs) = DocTest.collectSpecs code
         out =
-          { src = DocTest.createTempModule source specs
+          { src = DocTest.createTempModule testcode specs
           , runner = DocTest.evaluationScript
+          , filename = filename
           }
       in ({ specs = specs }, evaluate out)
 
@@ -35,10 +36,11 @@ update msg model =
           else DocTest.createReportFromOutput filename specs stdout
       in (model, report <| createReport model.specs result)
 
-port evaluate : { src: String, runner: String } -> Cmd msg
+port evaluate : { src: String, runner: String, filename: String } -> Cmd msg
 port report : DocTest.Report -> Cmd msg
 
 -- data models
+type alias SourceCode = { code : String , filename : String }
 type alias TestResult = { stdout : String , filename : String }
 type alias Model =
   { specs : List DocTest.Spec
@@ -48,7 +50,7 @@ type alias Model =
   data flow
   1. @js: read elm source code
   2. @js: send it to the srccode port
-  3. @elm: receive InputSourceCode message with sourcecode
+  3. @elm: receive Input message with sourcecode
   4. @elm: extract specs and create eval script
   5. @elm: send eval script back to js via evaluate port
   6. @js: feed eval script into elm-repl and get stdout
@@ -60,10 +62,10 @@ type alias Model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
   Sub.batch
-    [ srccode InputSourceCode
+    [ srccode Input
     , result NewResult
     ]
 
-port srccode : (String -> msg) -> Sub msg
+port srccode : (SourceCode -> msg) -> Sub msg
 port result : (TestResult -> msg) -> Sub msg
 

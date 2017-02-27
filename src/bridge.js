@@ -64,7 +64,7 @@ function* fileIterator( pretest, watch ) {
 				// for some reason, Elm port does not work without delay.
 				setTimeout(() => {
 					log(`\n processing: ${ elmfile }`)
-					app.ports.srccode.send( elmsrc )
+					app.ports.srccode.send({ code: elmsrc, filename:elmfile })
 				}, 1)
 			}
 			yield true
@@ -82,11 +82,11 @@ const app = Elm.Main.worker()
 
 /**
  */
-function test_elm_make(testfilename) {
+function test_elm_make(testfilename, elmfile) {
 	const { stdout, status, stderr } = spawn('elm-make', [testfilename, '--output=.tmp.js'], { encoding: 'utf8'})
 	if ( status !== 0 ) {
 		log( stdout )
-		log( stderr )
+		log( stderr.replace(testfilename, elmfile) )
 		log(`elm-make failed. aborting`)
 		return status
 	}
@@ -104,7 +104,7 @@ app.ports.evaluate.subscribe( resource => {
 	if ( resource.src.length == 0 ) return
 	// log('writing temporary source into file...')
 	fs.writeFileSync( testfilename, resource.src )
-	if (test_elm_make(testfilename) !== 0) return
+	if (test_elm_make(testfilename, resource.filename) !== 0) return
 	const { stdout, status, error } = spawn(elm_repl, [], { input: resource.runner, encoding: 'utf8'})
 	if ( error ) {
 		log(`elm-repl failed to run:\n ${ error }`)
