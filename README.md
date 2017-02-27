@@ -26,14 +26,17 @@ and the expression on the next line after `-- `.
 
 For example, if the comment states:
 ```Elm
--- >>> 3 * 2
+-- >>> x =
+-- >>>   1 + 2
+--
+-- >>> x * 2
 -- 6
 ```
 Then, elm-doctest asks elm-repl to evaluate the
 actual code section in the source file and
 effectively following expression:
 ```Elm
-(3 * 2) == (6)
+((1 + 2) * 2) == (6)
 ```
 If value reported by `elm-repl` is `True` then test passes, fail otherwise.
 

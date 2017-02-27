@@ -37,38 +37,48 @@ collectSpecs : String -> (String, List Spec)
 collectSpecs src =
   let
     blockCommentRegex = regex "{-(.|\\n)*-}"
-    evaluationMatcher = "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+" 
-    expectedMatcher = "(\\2(?!>>>).+\\3)+"
+    evaluationMatcher = "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
+    expectedMatcher = "(\\2(?!>>>).+\\3)*"
     testBlockRegex = regex (evaluationMatcher ++ expectedMatcher)
-    lineMatcher = regex "(?:(?:--)?[\\t ]*)?(>>>)?(.+)"
+    lineMatcher = regex "(?:--[\\t ]*)?(>>>)?(.+)"
+
     replacementStr { test, expected, line } =
-      String.join ""
-        [ "expression_", toString line, " = ", test
-        , "expected_", toString line, " = ", expected
-        ]
+      if String.isEmpty expected then
+        String.trimLeft test
+      else
+        String.join ""
+          [ "expression_", toString line, " = ", test
+          , "expected_", toString line, " = ", expected
+          ]
+
     extractSpecs { match, index } =
       let
         constructSpec { submatches } spec =
           case submatches of
             (Just _) :: (Just t) :: _ ->
-                  { spec | test = spec.test ++ t ++ "\n" }
+              { spec | test = spec.test ++ t ++ "\n" }
             Nothing :: (Just e) :: _ ->
-                  { spec | expected = spec.expected ++ e ++ "\n" }
-            _ -> spec
+              { spec | expected = spec.expected ++ e ++ "\n" }
+            _ ->
+              spec
       in
         find All lineMatcher match
         |> List.foldl constructSpec (newSpec "" "" (countLines index))
         |> \spec -> { spec | test = spec.test, expected = spec.expected }
-    countLines index =
-      String.left index src |> String.lines |> List.length
-    lineCommentifiedSrc = replace All blockCommentRegex lineCommentify src
+
+    countLines index = String.left index src |> String.lines |> List.length
+
+    modifiedSrc = replace All blockCommentRegex lineCommentify src
+
     lineCommentify { match } =
       String.lines match
       |> List.map (\line -> "-- " ++ line)
       |> String.join "\n"
   in
-    ( replace All testBlockRegex (replacementStr << extractSpecs) lineCommentifiedSrc
-    , find All testBlockRegex lineCommentifiedSrc |> List.map extractSpecs
+    ( replace All testBlockRegex (replacementStr << extractSpecs) modifiedSrc
+    , find All testBlockRegex modifiedSrc
+      |> List.map extractSpecs
+      |> List.filter (\spec -> not <| String.isEmpty spec.expected)
     )
 
 -- elm-repl requires tailing back slash for handling multi-line statements
