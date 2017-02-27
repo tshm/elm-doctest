@@ -32,20 +32,47 @@ newSpec : String -> String -> Int -> Spec
 newSpec test expected line = Spec test expected line "" False
 
 -- | This will correct specs from given Elm source code
-collectSpecs : String -> List Spec
-collectSpecs txt =
+collectSpecs : String -> (String, List Spec)
+collectSpecs src =
   let
-    blockRe = regex "(--[ \\t]+>>>[^\\r\\n]*[\\r\\n]+)+(--[ \\t]+[^|>][^\\r\\n]*[\\r\\n]+)+"
-    lineRe = regex "--(\\s+>>>)?(.+)"
+    evaluation = "(((?:--)?[\\t ]*)>>>.+(\\r\\n?|\\n))+"
+    expected = "(\\2(?!(-}|>>>)).+\\3)+"
+    blockRe = regex (evaluation ++ expected)
+    lineRe = regex "(?:(?:--)?[\\t ]*)?(>>>)?(.+)"
+    replacer m = extract m
+      |> (\{ test, expected, line } ->
+        let
+          num = toString line
+        in
+          String.join ""
+            [ "expression_"
+            , num
+            , " = "
+            , test
+            , "expected_"
+            , num
+            , " = "
+            , expected
+            ]
+       )
     extract m =
-      let ex mm spec =
-        case mm.submatches of
-          (Just _)::(Just t)::_ -> { spec | test = spec.test ++ "\n " ++ t }
-          (Nothing)::(Just e)::_ -> { spec | expected = spec.expected ++ "\n " ++ e }
-          _ -> spec
-      in find All lineRe m.match |> List.foldl ex (newSpec "" "" (countLines m))
-    countLines m = List.length <| String.lines <| String.left m.index txt
-  in find All blockRe txt |> List.map extract
+      let
+        ex mm spec =
+          case mm.submatches of
+            (Just _) :: (Just t) :: _ ->
+                  { spec | test = spec.test ++ t ++ "\n" }
+            Nothing :: (Just e) :: _ ->
+                  { spec | expected = spec.expected ++ e ++ "\n" }
+            _ -> spec
+      in
+        find All lineRe m.match
+        |> List.foldl ex (newSpec "" "" (countLines m))
+        |> \spec -> { spec | test = spec.test, expected = spec.expected }
+    countLines m = List.length <| String.lines <| String.left m.index src
+  in
+    ( replace All blockRe replacer src
+    , find All blockRe src |> List.map extract
+    )
 
 -- elm-repl requires tailing back slash for handling multi-line statements
 evaluationScript : String
@@ -74,8 +101,11 @@ createTempModule src specs =
     testDecr = "\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = "
     footer = "\n  ["
       ++ (specs |> List.map evalSpec |> String.join "\n  ,") ++ "\n  ]"
-    evalSpec {test, expected} = String.join ""
-      ["( (toString (", test ,")), (", test, ")==(", expected, ") )"]
+    evalSpec {test, expected, line} =
+      let num = toString line
+      in String.join ""
+        [ "( (toString (", test
+        , "  )), (expression_", num, " == ", "expected_", num, "))"]
   in newmodule ++ testDecr ++ footer
 
 -- | make human readable report

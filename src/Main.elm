@@ -18,9 +18,9 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputSourceCode source ->
+    InputSourceCode original ->
       let 
-        specs = DocTest.collectSpecs source
+        (source, specs) = DocTest.collectSpecs original
         out =
           { src = DocTest.createTempModule source specs
           , runner = DocTest.evaluationScript
