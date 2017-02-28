@@ -40,7 +40,7 @@ collectSpecs src =
     evaluationMatcher = "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
     expectedMatcher = "(\\2(?!>>>).+\\3)*"
     testBlockRegex = regex (evaluationMatcher ++ expectedMatcher)
-    lineMatcher = regex "(?:--[\\t ]*)?(>>>)?(.+)"
+    lineMatcher = regex "(?:--)?([\\t ]*>>>)?(.+)"
 
     replacementStr { test, expected, line } =
       if String.isEmpty expected then
@@ -120,7 +120,9 @@ createTempModule src specs =
 -- Report "Examples: 1  Failures: 0" False
 --
 -- >>> createReport "Test.elm" [Spec "3+1" "3" 1 "4" False]
--- Report "### Failure in Test.elm:1: expression 3+1\nexpected: 3\n but got: 4\nExamples: 1  Failures: 1" True
+-- Report
+--   ( "### Failure in Test.elm:1: expression 3+1\n"
+--   ++ "expected: 3\n but got: 4\nExamples: 1  Failures: 1") True
 --
 createReport : String -> List Spec -> Report
 createReport filename specs =
