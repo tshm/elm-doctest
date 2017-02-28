@@ -81,39 +81,45 @@ collectSpecs src =
       |> List.filter (\spec -> not <| String.isEmpty spec.expected)
     )
 
--- elm-repl requires tailing back slash for handling multi-line statements
-evaluationScript : String
-evaluationScript = """
-import DoctestTempModule__
-import Json.Encode exposing (object, list, bool, string, encode)
-encode 0 <| list <| \\
-  List.map (\\(o,r) -> object [("passed", bool r), ("output", string o)])\\
-  DoctestTempModule__.doctestResults_
+evalHeader : String
+evalHeader = """
+import DoctestTempModule__ exposing (..)
+import Json.Encode as J_
+J_.encode 0 <| J_.list <| List.map \\
+  (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
 """
+
+-- elm-repl requires tailing back slash for handling multi-line statements
+evaluationScript : List Spec -> String
+evaluationScript specs =
+  let
+    testCaseArray = "  ["
+      ++ (List.map evalSpec specs |> String.join "\n  ,")
+      ++ "\n  ]"
+    evalSpec {test, expected, line} =
+      let num = toString line
+      in String.join ""
+        [ "( (toString expression_", num, ")"
+        , ", (expression_", num, " == ", "expected_", num, "))"]
+  in evalHeader ++ (testCaseArray |> String.lines |> String.join "\\\n")
 
 -- | create temporary module source from original elm source code
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
   let
-    re = regex "^(\\w*\\s*)module\\s+([\\.\\w])+(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
-    newheader = "module DoctestTempModule__ exposing (doctestResults_)\n"
+    modulePart = "^(\\w*\\s*)module\\s+([\\.\\w])+"
+    exposingPart = "(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
+    moduleRe = regex (modulePart ++ exposingPart)
+    newheader = "module DoctestTempModule__ exposing (..)\n"
     isport match = (List.head match.submatches) == Just Nothing
     moduledecr match =
       case match.submatches of
         (Just str)::_ -> str ++ newheader
         _ -> newheader
-    replacedSrc = replace (AtMost 1) re moduledecr src
+    replacedSrc = replace (AtMost 1) moduleRe moduledecr src
     -- even supports the case where there is no module declaration
-    newmodule = if replacedSrc == src then newheader ++ src else replacedSrc
-    testDecr = "\n\ndoctestResults_ : List (String, Bool)\ndoctestResults_ = "
-    footer = "\n  ["
-      ++ (specs |> List.map evalSpec |> String.join "\n  ,") ++ "\n  ]"
-    evalSpec {test, expected, line} =
-      let num = toString line
-      in String.join ""
-        [ "( (toString (", test
-        , "  )), (expression_", num, " == ", "expected_", num, "))"]
-  in newmodule ++ testDecr ++ footer
+  in
+    if replacedSrc == src then newheader ++ src else replacedSrc
 
 -- | make human readable report
 -- >>> createReport "Test.elm" [Spec "3+1" "4" 1 "4" True]

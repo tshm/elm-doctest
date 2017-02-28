@@ -23,7 +23,7 @@ update msg model =
         (testcode, specs) = DocTest.collectSpecs code
         out =
           { src = DocTest.createTempModule testcode specs
-          , runner = DocTest.evaluationScript
+          , runner = DocTest.evaluationScript specs
           , filename = filename
           }
       in ({ specs = specs }, evaluate out)
