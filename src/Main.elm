@@ -32,7 +32,7 @@ update msg model =
       let
         createReport specs { filename, stdout, failed } =
           if failed then DocTest.Report stdout True
-          else if List.isEmpty specs    then DocTest.Report "" False
+          else if List.isEmpty specs    then DocTest.Report "no test found" False
           else if String.isEmpty stdout then DocTest.Report "" False
           else DocTest.createReportFromOutput filename specs stdout
       in (model, report <| createReport model.specs result)

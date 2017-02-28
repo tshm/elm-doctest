@@ -127,6 +127,7 @@ app.ports.evaluate.subscribe(resource => {
       app.ports.result.send({ stdout: JSON.parse(resultStr), filename: elmfile, failed: false })
     }
   } catch (e) {
+    log(`evaluation failed: ${e.message}`)
     app.ports.result.send({ stdout: e.message, filename: elmfile, failed: true })
   } finally {
     if (!debug && fs.existsSync(testfilename)) fs.unlinkSync(testfilename)
@@ -138,7 +139,6 @@ app.ports.evaluate.subscribe(resource => {
  */
 let returnValue = true
 app.ports.report.subscribe(report => {
-  if (report.text.length === 0) return
   log(report.text)
   if (report.failed) returnValue = false
   runNext(fi)
