@@ -3,7 +3,7 @@ require('shelljs/global')
 
 const doctest = 'node ./cli.js'
 
-const testfiles = ls('test/*.elm').join(' ')
+const testfiles = ls(['src/*.elm', 'test/*.elm']).join(' ')
 if (exec(`${doctest} -- ${testfiles}`).code !== 0) {
   echo('those tests must pass')
   exit(1)
