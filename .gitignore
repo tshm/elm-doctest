@@ -4,3 +4,4 @@ elm-stuff/
 .tmp*
 distribution
 tmp
+src/elm.js

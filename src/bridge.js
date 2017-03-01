@@ -2,7 +2,6 @@
 /** allow to use Elm from nodejs...
  */
 const path = require('path')
-const vm = require('vm')
 const fs = require('fs')
 const proc = require('process')
 const spawn = require('child_process').spawnSync
@@ -26,16 +25,6 @@ const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
 
 function log (o) { console.log(o) }
 if (debug) log('############## debug mode is ON ##############')
-
-/** loads Elm compiled javascript
- * and returns Elm object
- */
-function loadElm (path) {
-  const data = fs.readFileSync(path)
-  const context = { console, setInterval, setTimeout, setImmediate }
-  vm.runInNewContext(data, context, path)
-  return context.Elm
-}
 
 /** use generator to serialize the test runner for multiple files
  * if watch is true, then it does not quit even if queue is empty.
@@ -78,7 +67,7 @@ function* fileIterator (pretest, watch) {
 }
 
 // load main Elm script
-const Elm = loadElm(path.resolve(__dirname, '../distribution/index.js'))
+const Elm = require('./elm')
 const app = Elm.Main.worker()
 
 /**
