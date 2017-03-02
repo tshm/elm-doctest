@@ -73,19 +73,7 @@ emptyModel =
   , success = True
   }
 
-{--
-  data flow
-  1. @js: read elm source code
-  2. @js: send it to the srccode port
-  3. @elm: receive Input message with sourcecode
-  4. @elm: extract specs and create eval script
-  5. @elm: send eval script back to js via evaluate port
-  6. @js: feed eval script into elm-repl and get stdout
-  7. @js: send stdout back to elm via result port
-  8. @elm: parse stdout and send formatted report string into js
-  9. @elm: dump report and exit
---}
-
+-- subscriptions
 subscriptions : Model -> Sub Msg
 subscriptions _ =
   Sub.batch

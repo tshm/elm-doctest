@@ -1,18 +1,20 @@
 'use strict'
-/** allow to use Elm from nodejs...
- */
 const path = require('path')
 const fs = require('fs')
 const proc = require('process')
 const spawn = require('child_process').spawnSync
-const debug = proc.env.DEBUG || false
+
+/** debug mode can be controlled from env variable */
+const DEBUG = proc.env.DEBUG || false
+
+/** exit codes */
 const RETVAL = {
   SUCCESS: 0,
   FAIL: 1,
   EXCEPTION: 2
 }
 
-// extract source folder from elm-package.json
+/** extract source folder from elm-package.json */
 const cwd = (() => {
   try {
     const data = fs.readFileSync('elm-package.json')
@@ -24,7 +26,7 @@ const cwd = (() => {
 const TESTFILENAME = path.resolve(cwd, './DoctestTempModule__.elm')
 
 function log (o) { console.log(o) }
-if (debug) log('############## debug mode is ON ##############')
+if (DEBUG) log('############## debug mode is ON ##############')
 
 /** run elm-make to make sure test code compiles
  */
@@ -40,6 +42,8 @@ function checkElmMake (elmMake, testfilename, elmfile) {
   return status
 }
 
+/** setup elm runtime
+ */
 function makeElmRuntime (elmMake, elmRepl, watch) {
   // load main Elm script
   const app = require('./elm').Main.worker()
@@ -63,39 +67,35 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
   /** receive evaluate message from Elm and elm-make and evaluate
    * test cases, then send it back to Elm.
    */
-  app.ports.evaluate.subscribe(resource => {
-    if (debug) {
+  app.ports.evaluate.subscribe(({src, runner, filename}) => {
+    if (DEBUG) {
       log('----------- evaluate called.')
-      log(resource)
+      log([src, runner, filename])
     }
-    if (resource.src.length === 0) return
+    if (src.length === 0) return
     // log('writing temporary source into file...')
-    fs.writeFileSync(TESTFILENAME, resource.src)
+    fs.writeFileSync(TESTFILENAME, src)
     try {
-      if (checkElmMake(elmMake, TESTFILENAME, resource.filename) !== 0) {
+      if (checkElmMake(elmMake, TESTFILENAME, filename) !== 0) {
         throw new Error('elm-make exited with error')
       }
-      const { stdout, status, error } = spawn(elmRepl, [], {input: resource.runner, encoding: 'utf8'})
-      if (error) {
-        log(`elm-repl failed to run:\n ${error}`)
-      }
-      if (debug) log(stdout)
+      const {stdout, status, error} = spawn(elmRepl, [], {input: runner, encoding: 'utf8'})
+      if (error) log(`elm-repl failed to run:\n ${error}`)
+      if (DEBUG) log(stdout)
       if (status !== 0) {
         throw new Error(`elm-repl exited with ${status}`)
       } else {
         const match = stdout.match(/^> (.+)/gm)
-        if (!match) {
-          throw new Error('elm-repl did not produce output')
-        }
+        if (!match) throw new Error('elm-repl did not produce output')
         const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
-        if (debug) log(resultStr)
-        app.ports.result.send({ stdout: JSON.parse(resultStr), filename: resource.filename, failed: false })
+        if (DEBUG) log(resultStr)
+        app.ports.result.send({ stdout: JSON.parse(resultStr), filename: filename, failed: false })
       }
     } catch (e) {
       log(`evaluation failed: ${e.message}`)
-      app.ports.result.send({ stdout: e.message, filename: resource.filename, failed: true })
+      app.ports.result.send({ stdout: e.message, filename: filename, failed: true })
     } finally {
-      if (!debug && fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
+      if (!DEBUG && fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
     }
   })
 
@@ -107,9 +107,9 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
     app.ports.next.send(watch)
   })
 
-  /** exit the process */
+  /** exit the process with failure */
   app.ports.exit.subscribe(() => {
-    process.exit(1)
+    process.exit(RETVAL.FAIL)
   })
 
   return app
@@ -124,7 +124,7 @@ function parseOpt (argv) {
     alias: {h: 'help', v: 'version', w: 'watch'}
   }
   const opts = require('minimist')(argv, optSpec)
-  if (debug) console.log('options:', opts)
+  if (DEBUG) console.log('options:', opts)
 
   // show usage/help message
   if (opts.version || opts.help || !opts._) {
@@ -175,7 +175,7 @@ function runPretest (pretest) {
 
 /** main */
 (function main () {
-  const { elmMake, elmRepl, fileQueue, pretest, watch } = parseOpt(proc.argv.slice(2))
+  const {elmMake, elmRepl, fileQueue, pretest, watch} = parseOpt(proc.argv.slice(2))
   log('Starting elm-doctest ...')
 
   if (!runPretest(pretest)) {
@@ -193,7 +193,9 @@ function runPretest (pretest) {
     chokidar.watch(fileQueue).on('change', (path, stats) => {
       if (stats.size === 0) return
       console.log('\nfile has changed...')
-      app.ports.addfiles.send([path])
+      if (runPretest(pretest)) {
+        app.ports.addfiles.send([path])
+      }
     })
   }
   app.ports.addfiles.send(fileQueue)
