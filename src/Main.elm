@@ -6,18 +6,23 @@ import String
 main : Program Never Model Msg
 main =
   Platform.program
-    { init = ({ specs = [] }, Cmd.none)
+    { init = (emptyModel, Cmd.none)
     , update = update
     , subscriptions = subscriptions
     }
 
 type Msg
-  = Input SourceCode
+  = AddFileQueue (List String)
+  | Input SourceCode
   | NewResult TestResult
+  | GoNext Bool
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    AddFileQueue filenames ->
+      { model | fileQueue = model.fileQueue ++ filenames } ! [ Cmd.none ]
+
     Input { code, filename } ->
       let
         (testcode, specs) = DocTest.collectSpecs code
@@ -26,7 +31,7 @@ update msg model =
           , runner = DocTest.evaluationScript specs
           , filename = filename
           }
-      in ({ specs = specs }, evaluate out)
+      in ({ model | currentSpecs = specs }, evaluate out)
 
     NewResult result ->
       let
@@ -35,8 +40,16 @@ update msg model =
           else if List.isEmpty specs    then DocTest.Report "no test found" False
           else if String.isEmpty stdout then DocTest.Report "" False
           else DocTest.createReportFromOutput filename specs stdout
-      in (model, report <| createReport model.specs result)
+      in { model | success = not result.failed }
+           ! [ report <| createReport model.currentSpecs result ]
 
+    GoNext _ ->
+      case model.fileQueue of
+        newfile :: rest -> { model | fileQueue = rest } ! [ readfile newfile ]
+        [] -> (model, Cmd.none)
+
+-- output ports
+port readfile : String -> Cmd msg
 port evaluate : { src: String, runner: String, filename: String } -> Cmd msg
 port report : DocTest.Report -> Cmd msg
 
@@ -44,7 +57,16 @@ port report : DocTest.Report -> Cmd msg
 type alias SourceCode = { code : String , filename : String }
 type alias TestResult = { stdout : String , filename : String, failed : Bool }
 type alias Model =
-  { specs : List DocTest.Spec
+  { currentSpecs : List DocTest.Spec
+  , fileQueue : List String
+  , success : Bool
+  }
+
+emptyModel : Model
+emptyModel =
+  { currentSpecs = []
+  , fileQueue = []
+  , success = True
   }
 
 {--
@@ -63,10 +85,14 @@ type alias Model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
   Sub.batch
-    [ srccode Input
+    [ addfiles AddFileQueue
+    , srccode Input
     , result NewResult
+    , next GoNext
     ]
 
+-- input ports
+port addfiles : ((List String) -> msg) -> Sub msg
 port srccode : (SourceCode -> msg) -> Sub msg
 port result : (TestResult -> msg) -> Sub msg
-
+port next : (Bool -> msg) -> Sub msg

@@ -21,60 +21,16 @@ const cwd = (() => {
     return './'
   }
 })()
-const testfilename = path.resolve(cwd, './DoctestTempModule__.elm')
+const TESTFILENAME = path.resolve(cwd, './DoctestTempModule__.elm')
 
 function log (o) { console.log(o) }
 if (debug) log('############## debug mode is ON ##############')
 
-/** use generator to serialize the test runner for multiple files
- * if watch is true, then it does not quit even if queue is empty.
+/** run elm-make to make sure test code compiles
  */
-let elmfile = ''
-function* fileIterator (pretest, watch) {
-  while (true) {
-    if (fileQueue.length === 0) {
-      if (!watch) break
-      yield true
-      continue
-    }
-    elmfile = fileQueue.shift()
-    // log(`elmfile: ${elmfile}`)
-    try {
-      const runRepl = (pretest.length === 0) || (() => {
-        const cmd = pretest[0]
-        const args = pretest.slice(1)
-        const { stdout, stderr, status } = spawn(cmd, args, {encoding: 'utf8'})
-        if (stdout) log(`pretest: ${stdout}`)
-        if (stderr) log(`pretest err: ${stderr}`)
-        log(`pretest status: ${status}`)
-        return status === 0
-      })()
-      if (runRepl) {
-        const elmsrc = fs.readFileSync(elmfile, 'utf8')
-        // for some reason, Elm port does not work without delay.
-        setTimeout(() => {
-          log(`\n processing: ${elmfile}`)
-          app.ports.srccode.send({code: elmsrc, filename: elmfile})
-        }, 1)
-      }
-      yield true
-    } catch (e) {
-      log(`failed to run tests: ${e}`)
-      process.exit(RETVAL.EXCEPTION)
-    }
-  }
-  return
-}
-
-// load main Elm script
-const Elm = require('./elm')
-const app = Elm.Main.worker()
-
-/**
- */
-function checkElmMake (testfilename, elmfile) {
+function checkElmMake (elmMake, testfilename, elmfile) {
   const { stdout, status, stderr } =
-    spawn('elm-make', [testfilename, '--output=.tmp.js'], {encoding: 'utf8'})
+    spawn(elmMake, [testfilename, '--output=.tmp.js'], {encoding: 'utf8'})
   if (status !== 0) {
     log(stdout)
     log(stderr.replace(testfilename, elmfile))
@@ -84,63 +40,74 @@ function checkElmMake (testfilename, elmfile) {
   return status
 }
 
-/** receive evaluate message from Elm and elm-make and evaluate
- * test cases, then send it back to Elm.
- */
-app.ports.evaluate.subscribe(resource => {
-  if (debug) {
-    log('----------- evaluate called.')
-    log(resource)
-  }
-  if (resource.src.length === 0) return
-  // log('writing temporary source into file...')
-  fs.writeFileSync(testfilename, resource.src)
-  try {
-    if (checkElmMake(testfilename, resource.filename) !== 0) {
-      throw new Error('elm-make exited with error')
+function makeElmRuntime (elmMake, elmRepl) {
+  // load main Elm script
+  const app = require('./elm').Main.worker()
+
+  /** receive evaluate message from Elm and elm-make and evaluate
+   * test cases, then send it back to Elm.
+   */
+  app.ports.evaluate.subscribe(resource => {
+    if (debug) {
+      log('----------- evaluate called.')
+      log(resource)
     }
-    const { stdout, status, error } = spawn(elm_repl, [], {input: resource.runner, encoding: 'utf8'})
-    if (error) {
-      log(`elm-repl failed to run:\n ${error}`)
-    }
-    if (debug) log(stdout)
-    if (status !== 0) {
-      throw new Error(`elm-repl exited with ${status}`)
-    } else {
-      const match = stdout.match(/^> (.+)/gm)
-      if (!match) {
-        throw new Error('elm-repl did not produce output')
+    if (resource.src.length === 0) return
+    // log('writing temporary source into file...')
+    fs.writeFileSync(TESTFILENAME, resource.src)
+    try {
+      if (checkElmMake(elmMake, TESTFILENAME, resource.filename) !== 0) {
+        throw new Error('elm-make exited with error')
       }
-      const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
-      if (debug) log(resultStr)
-      app.ports.result.send({ stdout: JSON.parse(resultStr), filename: elmfile, failed: false })
+      const { stdout, status, error } = spawn(elmRepl, [], {input: resource.runner, encoding: 'utf8'})
+      if (error) {
+        log(`elm-repl failed to run:\n ${error}`)
+      }
+      if (debug) log(stdout)
+      if (status !== 0) {
+        throw new Error(`elm-repl exited with ${status}`)
+      } else {
+        const match = stdout.match(/^> (.+)/gm)
+        if (!match) {
+          throw new Error('elm-repl did not produce output')
+        }
+        const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
+        if (debug) log(resultStr)
+        app.ports.result.send({ stdout: JSON.parse(resultStr), filename: resource.filename, failed: false })
+      }
+    } catch (e) {
+      log(`evaluation failed: ${e.message}`)
+      app.ports.result.send({ stdout: e.message, filename: resource.filename, failed: true })
+    } finally {
+      if (!debug && fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
     }
-  } catch (e) {
-    log(`evaluation failed: ${e.message}`)
-    app.ports.result.send({ stdout: e.message, filename: elmfile, failed: true })
-  } finally {
-    if (!debug && fs.existsSync(testfilename)) fs.unlinkSync(testfilename)
-  }
-})
+  })
 
-/** Receive report message from Elm and
- * display results
- */
-let returnValue = true
-app.ports.report.subscribe(report => {
-  log(report.text)
-  if (report.failed) returnValue = false
-  runNext(fi)
-})
+  /** read elm source file and send it back to runtime
+   */
+  app.ports.readfile.subscribe((elmfile) => {
+    try {
+      const elmsrc = fs.readFileSync(elmfile, 'utf8')
+      // for some reason, Elm port does not work without delay.
+      setTimeout(() => {
+        log(`\n processing: ${elmfile}`)
+        app.ports.srccode.send({code: elmsrc, filename: elmfile})
+      }, 1)
+    } catch (e) {
+      log(`failed to run tests: ${e}`)
+      process.exit(RETVAL.EXCEPTION)
+    }
+  })
 
-/** Helper function to serialize the tests
- */
-function runNext (fi) {
-  const v = fi.next()
-  if (debug) log(v)
-  if (v.done) {
-    process.exit(returnValue ? RETVAL.SUCCESS : RETVAL.FAIL)
-  }
+  /** Receive report message from Elm and
+   * display results
+   */
+  app.ports.report.subscribe(report => {
+    log(report.text)
+    app.ports.next.send(false)
+  })
+
+  return app
 }
 
 /** parse commandline options
@@ -160,49 +127,72 @@ function parseOpt (argv) {
       const version = require('../package.json').version
       log(`elm-doctest ${version}`)
       log('')
-      log('Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH]')
+      log('Usage: elm-doctest [--help] [--watch] [--elm-repl-path PATH]')
+      log('                   [--elm-make-path PATH]')
       log('                   [--pretest CMD] FILES...')
       log('  run doctest against given Elm files')
       log('')
       log('Available options:')
       log('  -h,--help\t\t' +
         'Show this help text')
-      log('  --pretest CMD\t\t' +
-        'command to run before doc-test')
-      log('  --elm-repl-path PATH\t' +
-        'Path to elm-repl executable')
       log('  -w,--watch\t\t' +
         'Watch and run tests when target files get updated')
+      log('  --elm-repl-path PATH\t' +
+        'Path to elm-repl executable')
+      log('  --elm-make-path PATH\t' +
+        'Path to elm-make executable')
+      log('  --pretest CMD\t\t' +
+        'command to run before doc-test')
     })()
     process.exit(RETVAL.SUCCESS)
   }
 
   return {
-    elm_repl: opts['elm-repl-path'] || 'elm-repl',
+    elmMake: opts['elm-make-path'] || 'elm-make',
+    elmRepl: opts['elm-repl-path'] || 'elm-repl',
     fileQueue: opts._,
     pretest: opts.pretest ? opts.pretest.split(' ') : [],
     watch: opts.watch
   }
 }
 
-/** main */
-const { elm_repl, fileQueue, pretest, watch } = parseOpt(proc.argv.slice(2))
-log('Starting elm-doctest ...')
-
-// persist/watch files if `--watch` option was given
-if (watch) {
-  const chokidar = require('chokidar')
-  console.log('start watching...', fileQueue)
-
-  chokidar.watch(fileQueue).on('change', (path, stats) => {
-    if (stats.size === 0) return
-    console.log('\nfile has changed...')
-    fileQueue.push(path)
-    runNext(fi)
-  })
+/** run pretest */
+function runPretest (pretest) {
+  if (pretest.length === 0) return true
+  const cmd = pretest[0]
+  const args = pretest.slice(1)
+  const { stdout, stderr, status } = spawn(cmd, args, {encoding: 'utf8'})
+  if (stdout) log(`pretest: ${stdout}`)
+  if (stderr) log(`pretest err: ${stderr}`)
+  log(`pretest status: ${status}`)
+  return status === 0
 }
 
-// kick-off the test for the 1st time
-const fi = fileIterator(pretest, watch)
-runNext(fi)
+/** main */
+(function main () {
+  const { elmMake, elmRepl, fileQueue, pretest, watch } = parseOpt(proc.argv.slice(2))
+  log('Starting elm-doctest ...')
 
+  if (!runPretest(pretest)) {
+    log('exiting as preset failed')
+    process.exit(1)
+  }
+
+  const app = makeElmRuntime(elmMake, elmRepl)
+
+  // persist/watch files if `--watch` option was given
+  if (watch) {
+    const chokidar = require('chokidar')
+    console.log('start watching...', fileQueue)
+
+    chokidar.watch(fileQueue).on('change', (path, stats) => {
+      if (stats.size === 0) return
+      console.log('\nfile has changed...')
+      app.ports.addfiles.send([path])
+    })
+  }
+  app.ports.addfiles.send(fileQueue)
+
+  // kick off testing
+  app.ports.next.send(watch)
+})()
