@@ -6,6 +6,8 @@ const spawn = require('child_process').spawnSync
 
 /** debug mode can be controlled from env variable */
 const DEBUG = proc.env.DEBUG || false
+function log (o) { console.log(o) }
+if (DEBUG) log('############## debug mode is ON ##############')
 
 /** exit codes */
 const RETVAL = {
@@ -14,50 +16,44 @@ const RETVAL = {
   EXCEPTION: 2
 }
 
-/** extract source folder from elm-package.json */
-const cwd = (() => {
-  try {
-    const data = fs.readFileSync('elm-package.json')
-    return JSON.parse(data)['source-directories'][0]
-  } catch (e) {
-    return './'
-  }
-})()
-const TESTFILENAME = path.resolve(cwd, './DoctestTempModule__.elm')
-
-function log (o) { console.log(o) }
-if (DEBUG) log('############## debug mode is ON ##############')
-
-/** run elm-make to make sure test code compiles
- */
-function checkElmMake (elmMake, testfilename, elmfile) {
-  const { stdout, status, stderr } =
-    spawn(elmMake, [testfilename, '--output=.tmp.js'], {encoding: 'utf8'})
-  if (status !== 0) {
-    log(stdout)
-    log(stderr.replace(testfilename, elmfile))
-    log(`elm-make failed. aborting`)
-    return status
-  }
-  return status
-}
-
 /** setup elm runtime
  */
 function makeElmRuntime (elmMake, elmRepl, watch) {
+  /** extract source folder from elm-package.json */
+  const cwd = (() => {
+    try {
+      const data = fs.readFileSync('elm-package.json')
+      return JSON.parse(data)['source-directories'][0]
+    } catch (e) {
+      return './'
+    }
+  })()
+  const TESTFILENAME = path.resolve(cwd, './DoctestTempModule__.elm')
+
+  /** run elm-make to make sure test code compiles
+   */
+  function checkElmMake (elmMake, testfilename, elmfile) {
+    const { stdout, status, stderr } =
+      spawn(elmMake, [testfilename, '--output=.tmp.js'], {encoding: 'utf8'})
+    if (status !== 0) {
+      log(stdout)
+      log(stderr.replace(testfilename, elmfile))
+      log(`elm-make failed. aborting`)
+      return status
+    }
+    return status
+  }
+
   // load main Elm script
   const app = require('./elm').Main.worker()
 
   /** read elm source file and send it back to runtime
    */
-  app.ports.readfile.subscribe((elmfile) => {
+  app.ports.readfile.subscribe(elmfile => {
     try {
       const elmsrc = fs.readFileSync(elmfile, 'utf8')
-      // for some reason, Elm port does not work without delay.
-      setTimeout(() => {
-        log(`\n processing: ${elmfile}`)
-        app.ports.srccode.send({code: elmsrc, filename: elmfile})
-      }, 1)
+      log(`\n processing: ${elmfile}`)
+      app.ports.srccode.send({code: elmsrc, filename: elmfile})
     } catch (e) {
       log(`failed to run tests: ${e}`)
       process.exit(RETVAL.EXCEPTION)
@@ -73,7 +69,6 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       log([src, runner, filename])
     }
     if (src.length === 0) return
-    // log('writing temporary source into file...')
     fs.writeFileSync(TESTFILENAME, src)
     try {
       if (checkElmMake(elmMake, TESTFILENAME, filename) !== 0) {
