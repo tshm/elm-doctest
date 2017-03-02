@@ -40,18 +40,22 @@ update msg model =
           else if List.isEmpty specs    then DocTest.Report "no test found" False
           else if String.isEmpty stdout then DocTest.Report "" False
           else DocTest.createReportFromOutput filename specs stdout
-      in { model | success = not result.failed }
-           ! [ report <| createReport model.currentSpecs result ]
+        reportData = createReport model.currentSpecs result
+        success = model.success && (not reportData.failed)
+      in { model | success = success } ! [ report reportData ]
 
-    GoNext _ ->
+    GoNext watch ->
       case model.fileQueue of
         newfile :: rest -> { model | fileQueue = rest } ! [ readfile newfile ]
-        [] -> (model, Cmd.none)
+        [] ->
+          if watch || model.success then (model, Cmd.none)
+          else (model, exit ())
 
 -- output ports
 port readfile : String -> Cmd msg
 port evaluate : { src: String, runner: String, filename: String } -> Cmd msg
 port report : DocTest.Report -> Cmd msg
+port exit : () -> Cmd msg
 
 -- data models
 type alias SourceCode = { code : String , filename : String }

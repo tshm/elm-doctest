@@ -40,9 +40,25 @@ function checkElmMake (elmMake, testfilename, elmfile) {
   return status
 }
 
-function makeElmRuntime (elmMake, elmRepl) {
+function makeElmRuntime (elmMake, elmRepl, watch) {
   // load main Elm script
   const app = require('./elm').Main.worker()
+
+  /** read elm source file and send it back to runtime
+   */
+  app.ports.readfile.subscribe((elmfile) => {
+    try {
+      const elmsrc = fs.readFileSync(elmfile, 'utf8')
+      // for some reason, Elm port does not work without delay.
+      setTimeout(() => {
+        log(`\n processing: ${elmfile}`)
+        app.ports.srccode.send({code: elmsrc, filename: elmfile})
+      }, 1)
+    } catch (e) {
+      log(`failed to run tests: ${e}`)
+      process.exit(RETVAL.EXCEPTION)
+    }
+  })
 
   /** receive evaluate message from Elm and elm-make and evaluate
    * test cases, then send it back to Elm.
@@ -83,28 +99,17 @@ function makeElmRuntime (elmMake, elmRepl) {
     }
   })
 
-  /** read elm source file and send it back to runtime
-   */
-  app.ports.readfile.subscribe((elmfile) => {
-    try {
-      const elmsrc = fs.readFileSync(elmfile, 'utf8')
-      // for some reason, Elm port does not work without delay.
-      setTimeout(() => {
-        log(`\n processing: ${elmfile}`)
-        app.ports.srccode.send({code: elmsrc, filename: elmfile})
-      }, 1)
-    } catch (e) {
-      log(`failed to run tests: ${e}`)
-      process.exit(RETVAL.EXCEPTION)
-    }
-  })
-
   /** Receive report message from Elm and
    * display results
    */
   app.ports.report.subscribe(report => {
     log(report.text)
-    app.ports.next.send(false)
+    app.ports.next.send(watch)
+  })
+
+  /** exit the process */
+  app.ports.exit.subscribe(() => {
+    process.exit(1)
   })
 
   return app
@@ -178,7 +183,7 @@ function runPretest (pretest) {
     process.exit(1)
   }
 
-  const app = makeElmRuntime(elmMake, elmRepl)
+  const app = makeElmRuntime(elmMake, elmRepl, watch)
 
   // persist/watch files if `--watch` option was given
   if (watch) {
