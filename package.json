@@ -10,7 +10,7 @@
     "elm": "^0.18.0",
     "npm-check": "^5.4.0",
     "shelljs": "^0.7.5",
-    "standard": "^8.6.0"
+    "standard": "^9.0.0"
   },
   "scripts": {
     "prebuild": "npm install && elm-package install --yes",
