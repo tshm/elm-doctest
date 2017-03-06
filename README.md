@@ -44,6 +44,7 @@ If value reported by `elm-repl` is `True` then test passes, fail otherwise.
 
 ```
 Usage: elm-doctest [--watch] [--help] [--elm-repl-path PATH]
+                   [--elm-make-path PATH]
                    [--pretest CMD] FILES...
   run doctest against given Elm files
 
@@ -51,6 +52,7 @@ Available options:
   -h,--help             Show this help text
   --pretest CMD         command to run before doc-test
   --elm-repl-path PATH  Path to elm-repl executable
+  --elm-make-path PATH  Path to elm-make executable
   -w,--watch            Watch and run tests when target files get updated
 ```
 
