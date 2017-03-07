@@ -17,7 +17,7 @@
     "dist": "npm run build",
     "build": "elm-make --yes --warn src/Main.elm --output ./src/elm.js",
     "check": "npm-check -s -p",
-    "lint": "standard src/bridge.js",
+    "lint": "standard src/bridge.js src/main.js src/util.js",
     "pretest": "npm run build && npm run check && npm run lint",
     "test0": "node ./test/run.js",
     "test": "npm run test0"
