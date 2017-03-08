@@ -1,9 +1,10 @@
 function log (o) { console.log(o) }
 
+const DEBUG = require('process').env.DEBUG || false
 const dump = (() => {
-  if (require('process').env.DEBUG) {
+  if (DEBUG) {
     log('############## debug mode is ON ##############')
-    return function (o) { console.debug(o) }
+    return function (o) { console.warn(o) }
   } else {
     return function (o) {}
   }
@@ -18,5 +19,6 @@ const RETVAL = {
 module.exports = {
   log: log,
   dump: dump,
+  DEBUG: DEBUG,
   RETVAL: RETVAL
 }

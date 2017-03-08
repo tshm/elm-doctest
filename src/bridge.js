@@ -1,4 +1,4 @@
-const { log, dump, RETVAL } = require('./util')
+const { log, dump, DEBUG, RETVAL } = require('./util')
 const path = require('path')
 const fs = require('fs')
 const { spawnSync } = require('child_process')
@@ -75,7 +75,7 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       log(`evaluation failed: ${e.message}`)
       app.ports.result.send({ stdout: e.message, filename: filename, failed: true })
     } finally {
-      if (fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
+      if (!DEBUG && fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
     }
   })
 
