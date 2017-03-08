@@ -36,7 +36,7 @@ newSpec test expected line = Spec test expected line "" False
 collectSpecs : String -> (String, List Spec)
 collectSpecs src =
   let
-    blockCommentRegex = regex "{-(.|\\n)*-}"
+    blockCommentRegex = regex "{-(.|\\n)*?-}"
     evaluationMatcher = "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
     expectedMatcher = "(\\2(?!>>>).+\\3)*"
     testBlockRegex = regex (evaluationMatcher ++ expectedMatcher)
@@ -72,6 +72,7 @@ collectSpecs src =
 
     lineCommentify { match } =
       String.lines match
+      |> List.map (replace All (regex "({-|-})") (always "--"))
       |> List.map (\line -> "-- " ++ line)
       |> String.join "\n"
   in
