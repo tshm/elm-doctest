@@ -61,6 +61,7 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       }
       const {stdout, status, error} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
       if (error) log(`elm-repl failed to run:\n ${error}`)
+      if (error) fs.writeFileSync('runner.elm', runner)
       dump(stdout)
       if (status !== 0) {
         throw new Error(`elm-repl exited with ${status}`)

@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "doctest for elm",
   "main": "./src/bridge.js",
   "bin": {
@@ -10,7 +10,7 @@
     "elm": "^0.18.0",
     "npm-check": "^5.4.0",
     "shelljs": "^0.7.5",
-    "standard": "^9.0.0"
+    "standard": "^10.0.3"
   },
   "scripts": {
     "prebuild": "npm install && elm-package install --yes",

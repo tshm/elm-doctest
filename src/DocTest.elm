@@ -4,123 +4,208 @@ import Regex exposing (..)
 import String
 import Json.Decode exposing (..)
 
+
 -- | model for holding spec info
+
+
 type alias Spec =
-  { test : String
-  , expected : String
-  , line : Int
-  , output : String
-  , passed : Bool
-  }
+    { test : String
+    , expected : String
+    , line : Int
+    , output : String
+    , passed : Bool
+    }
+
+
 
 -- | model for report
+
+
 type alias Report =
-  { text : String
-  , failed : Bool
-  }
+    { text : String
+    , failed : Bool
+    }
+
+
 
 -- | model for output
+
+
 type alias Output =
-  { expression : String
-  , passed : Bool
-  }
+    { expression : String
+    , passed : Bool
+    }
+
+
 
 -- | spec constructor.
 -- initially all specs have "False" result.
 -- it will be evaluated later in the process.
+
+
 newSpec : String -> String -> Int -> Spec
-newSpec test expected line = Spec test expected line "" False
+newSpec test expected line =
+    Spec test expected line "" False
+
+
 
 -- | This will correct specs from given Elm source code
 -- TODO: this part of the code is very ineffecient.  Has to be fixed.
-collectSpecs : String -> (String, List Spec)
+
+
+collectSpecs : String -> ( String, List Spec )
 collectSpecs src =
-  let
-    blockCommentRegex = regex "{-(.|\\n)*?-}"
-    evaluationMatcher = "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
-    expectedMatcher = "(\\2(?!>>>).+\\3)*"
-    testBlockRegex = regex (evaluationMatcher ++ expectedMatcher)
-    lineMatcher = regex "(?:--)?([\\t ]*>>>)?(.+)"
+    let
+        blockCommentRegex =
+            regex "{-(.|\\n)*?-}"
 
-    replacementStr { test, expected, line } =
-      if String.isEmpty expected then
-        String.trimLeft test
-      else
-        String.join ""
-          [ "expression_", toString line, " = ", test
-          , "expected_", toString line, " = ", expected
-          ]
+        evaluationMatcher =
+            "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
 
-    extractSpecs { match, index } =
-      let
-        constructSpec { submatches } spec =
-          case submatches of
-            (Just _) :: (Just t) :: _ ->
-              { spec | test = spec.test ++ t ++ "\n" }
-            Nothing :: (Just e) :: _ ->
-              { spec | expected = spec.expected ++ e ++ "\n" }
-            _ ->
-              spec
-      in
-        find All lineMatcher match
-        |> List.foldl constructSpec (newSpec "" "" (countLines index))
-        |> \spec -> { spec | test = spec.test, expected = spec.expected }
+        expectedMatcher =
+            "(\\2(?!>>>).+\\3)*"
 
-    countLines index = String.left index src |> String.lines |> List.length
+        testBlockRegex =
+            regex (evaluationMatcher ++ expectedMatcher)
 
-    modifiedSrc = replace All blockCommentRegex lineCommentify src
+        lineMatcher =
+            regex "(?:--)?([\\t ]*>>>)?(.+)"
 
-    lineCommentify { match } =
-      String.lines match
-      |> List.map (replace All (regex "({-|-})") (always "--"))
-      |> List.map (\line -> "-- " ++ line)
-      |> String.join "\n"
-  in
-    ( replace All testBlockRegex (replacementStr << extractSpecs) modifiedSrc
-    , find All testBlockRegex modifiedSrc
-      |> List.map extractSpecs
-      |> List.filter (\spec -> not <| String.isEmpty spec.expected)
-    )
+        replacementStr { test, expected, line } =
+            if String.isEmpty expected then
+                String.trimLeft test
+            else
+                String.join ""
+                    [ "expression_"
+                    , toString line
+                    , " = "
+                    , test
+                    , "expected_"
+                    , toString line
+                    , " = "
+                    , expected
+                    ]
+
+        extractSpecs { match, index } =
+            let
+                constructSpec { submatches } spec =
+                    case submatches of
+                        (Just _) :: (Just t) :: _ ->
+                            { spec | test = spec.test ++ t ++ "\n" }
+
+                        Nothing :: (Just e) :: _ ->
+                            { spec | expected = spec.expected ++ e ++ "\n" }
+
+                        _ ->
+                            spec
+            in
+                find All lineMatcher match
+                    |> List.foldl constructSpec (newSpec "" "" (countLines index))
+                    |> \spec -> { spec | test = spec.test, expected = spec.expected }
+
+        countLines index =
+            String.left index src |> String.lines |> List.length
+
+        modifiedSrc =
+            replace All blockCommentRegex lineCommentify src
+
+        lineCommentify { match } =
+            String.lines match
+                |> List.map (replace All (regex "({-|-})") (always "--"))
+                |> List.map (\line -> "-- " ++ line)
+                |> String.join "\n"
+    in
+        ( replace All testBlockRegex (replacementStr << extractSpecs) modifiedSrc
+        , find All testBlockRegex modifiedSrc
+            |> List.map extractSpecs
+            |> List.filter (\spec -> not <| String.isEmpty spec.expected)
+        )
+
 
 evalHeader : String
-evalHeader = """
-import DoctestTempModule__ exposing (..)
+evalHeader =
+    """
+import Json.Decode
 import Json.Encode as J_
+import DoctestTempModule__ exposing (..)
 J_.encode 0 <| J_.list <| List.map \\
   (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
 """
 
+
+
 -- elm-repl requires tailing back slash for handling multi-line statements
+
+
 evaluationScript : List Spec -> String
 evaluationScript specs =
-  let
-    testCaseArray = "  ["
-      ++ (List.map evalSpec specs |> String.join "\n  ,")
-      ++ "\n  ]"
-    evalSpec {test, expected, line} =
-      let num = toString line
-      in String.join ""
-        [ "( (toString expression_", num, ")"
-        , ", (expression_", num, " == ", "expected_", num, "))"]
-  in evalHeader ++ (testCaseArray |> String.lines |> String.join "\\\n")
+    let
+        testCaseArray =
+            "  ["
+                ++ (List.map evalSpec specs |> String.join "\n  ,")
+                ++ "\n  ]"
+
+        evalSpec { test, expected, line } =
+            let
+                num =
+                    toString line
+            in
+                String.join ""
+                    [ "( (toString expression_"
+                    , num
+                    , ")"
+                    , ", (expression_"
+                    , num
+                    , " == "
+                    , "expected_"
+                    , num
+                    , "))"
+                    ]
+    in
+        evalHeader ++ (testCaseArray |> String.lines |> String.join "\\\n")
+
+
 
 -- | create temporary module source from original elm source code
+
+
 createTempModule : String -> List Spec -> String
 createTempModule src specs =
-  let
-    modulePart = "^(\\w*\\s*)module\\s+([\\.\\w])+"
-    exposingPart = "(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
-    moduleRe = regex (modulePart ++ exposingPart)
-    newheader = "module DoctestTempModule__ exposing (..)\n"
-    isport match = (List.head match.submatches) == Just Nothing
-    moduledecr match =
-      case match.submatches of
-        (Just str)::_ -> str ++ newheader
-        _ -> newheader
-    replacedSrc = replace (AtMost 1) moduleRe moduledecr src
-    -- even supports the case where there is no module declaration
-  in
-    if replacedSrc == src then newheader ++ src else replacedSrc
+    let
+        modulePart =
+            "^(\\w*\\s*)module\\s+([\\.\\w])+"
+
+        exposingPart =
+            "(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
+
+        moduleRe =
+            regex (modulePart ++ exposingPart)
+
+        newheader =
+            "module DoctestTempModule__ exposing (..)\n"
+
+        isport match =
+            (List.head match.submatches) == Just Nothing
+
+        moduledecr match =
+            case match.submatches of
+                (Just str) :: _ ->
+                    str ++ newheader
+
+                _ ->
+                    newheader
+
+        replacedSrc =
+            replace (AtMost 1) moduleRe moduledecr src
+
+        -- even supports the case where there is no module declaration
+    in
+        if replacedSrc == src then
+            newheader ++ src
+        else
+            replacedSrc
+
+
 
 -- | make human readable report
 -- >>> createReport "Test.elm" [Spec "3+1" "4" 1 "4" True]
@@ -131,23 +216,39 @@ createTempModule src specs =
 --   ( "### Failure in Test.elm:1: expression 3+1\n"
 --   ++ "expected: 3\n but got: 4\nExamples: 1  Failures: 1") True
 --
+
+
 createReport : String -> List Spec -> Report
 createReport filename specs =
-  let
-    failures = List.filter (not << .passed) specs
-    summary = String.join "  "
-      [ "Examples: " ++ (toString <| List.length specs)
-      , "Failures: " ++ (toString <| List.length failures)
-      ]
-    reports = failures |> List.map reportFailure
-    reportFailure {test, expected, line, passed, output} = String.join "\n"
-      [ "### Failure in " ++ filename ++ ":" ++ (toString line)
-       ++ ": expression " ++ test
-      , "expected: " ++ (String.trim expected)
-      , " but got: " ++ (String.trim output)
-      , ""
-      ]
-  in Report (String.join "\n" reports ++ summary) (not <| List.isEmpty failures)
+    let
+        failures =
+            List.filter (not << .passed) specs
+
+        summary =
+            String.join "  "
+                [ "Examples: " ++ (toString <| List.length specs)
+                , "Failures: " ++ (toString <| List.length failures)
+                ]
+
+        reports =
+            failures |> List.map reportFailure
+
+        reportFailure { test, expected, line, passed, output } =
+            String.join "\n"
+                [ "### Failure in "
+                    ++ filename
+                    ++ ":"
+                    ++ (toString line)
+                    ++ ": expression "
+                    ++ test
+                , "expected: " ++ (String.trim expected)
+                , " but got: " ++ (String.trim output)
+                , ""
+                ]
+    in
+        Report (String.join "\n" reports ++ summary) (not <| List.isEmpty failures)
+
+
 
 -- | parse the raw json string which dumped by elm-repl
 --
@@ -160,33 +261,53 @@ createReport filename specs =
 -- >>> parseOutput "[{\"passed\":true, \"output\":\"8\"},{\"passed\":false, \"output\":\"3\"}]"
 -- [Output "8" True, Output "3" False]
 --
+
+
 parseOutput : String -> List Output
 parseOutput txt =
-  let decoder = Json.Decode.list
-              <| Json.Decode.map2 Output
-                (Json.Decode.field "output" string)
-                (Json.Decode.field "passed" bool)
-  in Result.withDefault [] <| decodeString decoder txt
+    let
+        decoder =
+            Json.Decode.list <|
+                Json.Decode.map2 Output
+                    (Json.Decode.field "output" string)
+                    (Json.Decode.field "passed" bool)
+    in
+        Result.withDefault [] <| decodeString decoder txt
+
+
 
 -- | merge outputs into spec list
 -- >>> mergeResultIntoSpecs [Spec "1+2" "3" 1 "3" True] [Output "3" True]
 -- [Spec "1+2" "3" 1 "3" True]
 --
+
+
 mergeResultIntoSpecs : List Spec -> List Output -> List Spec
 mergeResultIntoSpecs specs outputs =
-  let
-    merge spec {expression, passed} = { spec | output = expression, passed = passed }
-  in List.map2 merge specs outputs
+    let
+        merge spec { expression, passed } =
+            { spec | output = expression, passed = passed }
+    in
+        List.map2 merge specs outputs
+
+
 
 -- | parse and merge raw output string into spec list
+
+
 mergeRawOutputIntoSpecs : List Spec -> String -> List Spec
 mergeRawOutputIntoSpecs specs txt =
-  mergeResultIntoSpecs specs <| parseOutput txt
+    mergeResultIntoSpecs specs <| parseOutput txt
+
+
 
 -- | create report from raw output
+
+
 createReportFromOutput : String -> List Spec -> String -> Report
 createReportFromOutput filename specs output =
-  let
-      resultSpecs = mergeRawOutputIntoSpecs specs output
-  in createReport filename resultSpecs
-
+    let
+        resultSpecs =
+            mergeRawOutputIntoSpecs specs output
+    in
+        createReport filename resultSpecs
