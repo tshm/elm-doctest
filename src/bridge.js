@@ -15,7 +15,6 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       return './'
     }
   })()
-  const TESTFILENAME = path.resolve(cwd, './DoctestTempModule__.elm')
 
   /** run elm-make to make sure test code compiles
    */
@@ -50,18 +49,19 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
   /** receive evaluate message from Elm and elm-make and evaluate
    * test cases, then send it back to Elm.
    */
-  app.ports.evaluate.subscribe(({src, runner, filename}) => {
+  app.ports.evaluate.subscribe(({src, runner, filename, modulename}) => {
     dump('----------- evaluate called.')
     dump([src, runner, filename])
     if (src.length === 0) return
-    fs.writeFileSync(TESTFILENAME, src)
+    const tempModulePath = path.resolve(cwd, `${modulename}.elm`)
+    fs.writeFileSync(tempModulePath, src)
     try {
-      if (checkElmMake(elmMake, TESTFILENAME, filename) !== 0) {
+      if (checkElmMake(elmMake, tempModulePath, filename) !== 0) {
         throw new Error('elm-make exited with error')
       }
-      const {stdout, status, error} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
-      if (error) log(`elm-repl failed to run:\n ${error}`)
-      if (error) fs.writeFileSync('runner.elm', runner)
+      const {stdout, status, stderr} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
+      if (stderr) log(`elm-repl failed to run:\n ${stderr}`)
+      if (DEBUG) fs.writeFileSync('runner.elm', runner)
       dump(stdout)
       if (status !== 0) {
         throw new Error(`elm-repl exited with ${status}`)
@@ -76,7 +76,7 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       log(`evaluation failed: ${e.message}`)
       app.ports.result.send({ stdout: e.message, filename: filename, failed: true })
     } finally {
-      if (!DEBUG && fs.existsSync(TESTFILENAME)) fs.unlinkSync(TESTFILENAME)
+      if (!DEBUG && fs.existsSync(tempModulePath)) fs.unlinkSync(tempModulePath)
     }
   })
 
