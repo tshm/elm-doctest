@@ -122,23 +122,64 @@ collectSpecs src =
         )
 
 
-evalHeader : String
-evalHeader =
-    """
+evalHeader : String -> String
+evalHeader modname =
+    let
+        first =
+            """
 import Json.Decode
 import Json.Encode as J_
-import DoctestTempModule__ exposing (..)
+"""
+
+        targetImport =
+            "import " ++ modname ++ " exposing (..)"
+
+        eval =
+            """
 J_.encode 0 <| J_.list <| List.map \\
   (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
 """
+    in
+        first ++ targetImport ++ eval
+
+
+
+-- |
+-- >>> getModuleName "./src/Test.elm"
+-- "DoctestTempModule__src_Test_elm"
+--
+-- >>> getModuleName ".\\src\\TestA.elm"
+-- "DoctestTempModule__src_TestA_elm"
+--
+-- >>> getModuleName "TestB.elm"
+-- "DoctestTempModule__TestB_elm"
+--
+
+
+getModuleName : String -> String
+getModuleName filename =
+    filename
+        |> String.map
+            (\c ->
+                if List.member c [ '/', '\\', '.' ] then
+                    ' '
+                else
+                    c
+            )
+        |> String.words
+        |> String.join "_"
+        |> String.split ".elm"
+        |> List.head
+        |> Maybe.withDefault ""
+        |> (\s -> "DoctestTempModule__" ++ s)
 
 
 
 -- elm-repl requires tailing back slash for handling multi-line statements
 
 
-evaluationScript : List Spec -> String
-evaluationScript specs =
+evaluationScript : String -> List Spec -> ( String, String )
+evaluationScript filename specs =
     let
         testCaseArray =
             "  ["
@@ -161,16 +202,24 @@ evaluationScript specs =
                     , num
                     , "))"
                     ]
+
+        header =
+            evalHeader moduleName
+
+        moduleName =
+            getModuleName filename
     in
-        evalHeader ++ (testCaseArray |> String.lines |> String.join "\\\n")
+        ( header ++ (testCaseArray |> String.lines |> String.join "\\\n")
+        , moduleName
+        )
 
 
 
 -- | create temporary module source from original elm source code
 
 
-createTempModule : String -> List Spec -> String
-createTempModule src specs =
+createTempModule : String -> String -> List Spec -> String
+createTempModule modulename src specs =
     let
         modulePart =
             "^(\\w*\\s*)module\\s+([\\.\\w])+"
@@ -182,7 +231,7 @@ createTempModule src specs =
             regex (modulePart ++ exposingPart)
 
         newheader =
-            "module DoctestTempModule__ exposing (..)\n"
+            "module " ++ modulename ++ " exposing (..)\n"
 
         isport match =
             (List.head match.submatches) == Just Nothing
