@@ -59,12 +59,12 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
       if (checkElmMake(elmMake, tempModulePath, filename) !== 0) {
         throw new Error('elm-make exited with error')
       }
-      const {stdout, status, stderr} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
-      if (stderr) log(`elm-repl failed to run:\n ${stderr}`)
+      const {stdout, stderr, status} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
       if (DEBUG) fs.writeFileSync('runner.elm', runner)
       dump(stdout)
-      if (status !== 0) {
-        throw new Error(`elm-repl exited with ${status}`)
+      if (status !== 0 || stderr) {
+        if (stderr) log(stderr)
+        throw new Error(`elm-repl failed with some error.`)
       } else {
         const match = stdout.match(/^> (.+)/gm)
         if (!match) throw new Error('elm-repl did not produce output')
@@ -73,7 +73,6 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
         app.ports.result.send({ stdout: JSON.parse(resultStr), filename: filename, failed: false })
       }
     } catch (e) {
-      log(`evaluation failed: ${e.message}`)
       app.ports.result.send({ stdout: e.message, filename: filename, failed: true })
     } finally {
       if (!DEBUG && fs.existsSync(tempModulePath)) fs.unlinkSync(tempModulePath)
