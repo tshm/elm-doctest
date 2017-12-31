@@ -4,7 +4,7 @@
   "description": "doctest for elm",
   "main": "./src/bridge.js",
   "bin": {
-    "elm-doctest": "./cli.js"
+    "elm-doctest": "./bin/cli.js"
   },
   "devDependencies": {
     "elm": "^0.18.0",
