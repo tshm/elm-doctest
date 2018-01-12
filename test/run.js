@@ -1,7 +1,7 @@
 /* eslint-env node, shelljs */
 require('shelljs/global')
 
-const doctest = 'node ./cli.js'
+const doctest = 'node ./bin/cli.js'
 
 const testfiles = ls(['src/*.elm', 'test/*.elm']).join(' ')
 if (exec(`${doctest} -- ${testfiles}`).code !== 0) {
