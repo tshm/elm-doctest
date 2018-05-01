@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "doctest for elm",
   "main": "./src/bridge.js",
   "bin": {
