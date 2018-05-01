@@ -100,6 +100,8 @@ As it utilizes `elm-repl`, the script must be runnable
 inside `elm-repl`.
 For example, code which imports `elm-lang/navigation@1.0.0`
 module cannot be tested.
+Since the stdout is used to evaluate the test result,
+avoid using `Debug.log`.
 
 Also, make sure elm-make runs without error.
 You can auto run elm-make by using `--pretest` command-line

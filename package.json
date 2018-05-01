@@ -39,7 +39,7 @@
     "doctest"
   ],
   "dependencies": {
-    "chokidar": "^1.7.0",
+    "chokidar": "^2.0.3",
     "minimist": "^1.2.0"
   }
 }
