@@ -1,6 +1,6 @@
 {
   "name": "elm-doctest",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "doctest for elm",
   "main": "./src/bridge.js",
   "bin": {
@@ -39,7 +39,7 @@
     "doctest"
   ],
   "dependencies": {
-    "chokidar": "^1.7.0",
+    "chokidar": "^2.0.3",
     "minimist": "^1.2.0"
   }
 }
