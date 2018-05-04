@@ -9,8 +9,8 @@
   "devDependencies": {
     "elm": "^0.18.0",
     "npm-check": "^5.4.0",
-    "shelljs": "^0.7.5",
-    "standard": "^10.0.3"
+    "shelljs": "^0.8.1",
+    "standard": "^11.0.1"
   },
   "scripts": {
     "prebuild": "npm install && elm-package install --yes",
