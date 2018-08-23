@@ -6,17 +6,17 @@ const { spawnSync } = require('child_process')
 /** setup elm runtime
  */
 function makeElmRuntime (elmMake, elmRepl, watch) {
-  /** extract source folder from elm-package.json */
+  /** extract source folder from elm.json */
   const cwd = (() => {
     try {
-      const data = fs.readFileSync('elm-package.json')
+      const data = fs.readFileSync('elm.json')
       return JSON.parse(data)['source-directories'][0]
     } catch (e) {
       return './'
     }
   })()
 
-  /** run elm-make to make sure test code compiles
+  /** run elm make to make sure test code compiles
    */
   function checkElmMake (elmMake, testfilename, elmfile) {
     const { stdout, status, stderr } =
@@ -24,7 +24,7 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
     if (status !== 0) {
       log(stdout)
       log(stderr.replace(testfilename, elmfile))
-      log(`elm-make failed. aborting`)
+      log(`elm make failed. aborting`)
       return status
     }
     return status
@@ -46,7 +46,7 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
     }
   })
 
-  /** receive evaluate message from Elm and elm-make and evaluate
+  /** receive evaluate message from Elm and elm make and evaluate
    * test cases, then send it back to Elm.
    */
   app.ports.evaluate.subscribe(({src, runner, filename, modulename}) => {
@@ -57,17 +57,17 @@ function makeElmRuntime (elmMake, elmRepl, watch) {
     fs.writeFileSync(tempModulePath, src)
     try {
       if (checkElmMake(elmMake, tempModulePath, filename) !== 0) {
-        throw new Error('elm-make exited with error')
+        throw new Error('elm make exited with error')
       }
       const {stdout, stderr, status} = spawnSync(elmRepl, [], {input: runner, encoding: 'utf8'})
       if (DEBUG) fs.writeFileSync('runner.elm', runner)
       dump(stdout)
       if (status !== 0 || stderr) {
         if (stderr) log(stderr)
-        throw new Error(`elm-repl failed with some error.`)
+        throw new Error(`elm repl failed with some error.`)
       } else {
         const match = stdout.match(/^> (.+)/gm)
-        if (!match) throw new Error('elm-repl did not produce output')
+        if (!match) throw new Error('elm repl did not produce output')
         const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
         dump(resultStr)
         app.ports.result.send({ stdout: JSON.parse(resultStr), filename: filename, failed: false })

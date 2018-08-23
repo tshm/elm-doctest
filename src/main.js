@@ -40,8 +40,8 @@ function parseOpt (argv) {
   }
 
   return {
-    elmMake: opts['elm-make-path'] || 'elm-make',
-    elmRepl: opts['elm-repl-path'] || 'elm-repl',
+    elmMake: opts['elm-make-path'] || 'elm make',
+    elmRepl: opts['elm-repl-path'] || 'elm repl',
     fileQueue: opts._,
     pretest: opts.pretest ? opts.pretest.split(' ') : [],
     watch: opts.watch
