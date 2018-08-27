@@ -9,9 +9,12 @@
         "direct": {
             "elm/core": "1.0.0",
             "elm/json": "1.0.0",
+            "elm/random": "1.0.0",
             "elm/regex": "1.0.0"
         },
-        "indirect": {}
+        "indirect": {
+            "elm/time": "1.0.0"
+        }
     },
     "test-dependencies": {
         "direct": {},

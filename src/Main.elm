@@ -4,7 +4,7 @@ import DocTest
 import String
 
 
-main : Program flags Model Msg
+main : Program () Model Msg
 main =
     Platform.worker
         { init = init
@@ -12,7 +12,7 @@ main =
         , subscriptions = subscriptions
         }
 
-init : flag -> ( Model, Cmd Msg )
+init : () -> ( Model, Cmd Msg )
 init _ = ( emptyModel, Cmd.none )
 
 type Msg

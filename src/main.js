@@ -7,7 +7,7 @@ const { spawnSync } = require('child_process')
 function parseOpt (argv) {
   const optSpec = {
     boolean: ['help', 'version', 'watch'],
-    string: ['elm-repl-path', 'pretest'],
+    string: ['elm-path', 'pretest'],
     alias: {h: 'help', v: 'version', w: 'watch'}
   }
   const opts = require('minimist')(argv, optSpec)
@@ -19,8 +19,7 @@ function parseOpt (argv) {
       const version = require('../package.json').version
       log(`elm-doctest ${version}`)
       log('')
-      log('Usage: elm-doctest [--help] [--watch] [--elm-repl-path PATH]')
-      log('                   [--elm-make-path PATH]')
+      log('Usage: elm-doctest [--help] [--watch] [--elm-path PATH]')
       log('                   [--pretest CMD] FILES...')
       log('  run doctest against given Elm files')
       log('')
@@ -29,10 +28,8 @@ function parseOpt (argv) {
         'Show this help text')
       log('  -w,--watch\t\t' +
         'Watch and run tests when target files get updated')
-      log('  --elm-repl-path PATH\t' +
-        'Path to elm-repl executable')
-      log('  --elm-make-path PATH\t' +
-        'Path to elm-make executable')
+      log('  --elm-path PATH\t' +
+        'Path to elm executable')
       log('  --pretest CMD\t\t' +
         'command to run before doc-test')
     })()
@@ -40,8 +37,7 @@ function parseOpt (argv) {
   }
 
   return {
-    elmMake: opts['elm-make-path'] || 'elm make',
-    elmRepl: opts['elm-repl-path'] || 'elm repl',
+    elmpath: opts['elm-path'] || 'elm',
     fileQueue: opts._,
     pretest: opts.pretest ? opts.pretest.split(' ') : [],
     watch: opts.watch
@@ -62,7 +58,7 @@ function runPretest (pretest) {
 
 /** main */
 (function main (argv) {
-  const {elmMake, elmRepl, fileQueue, pretest, watch} = parseOpt(argv)
+  const {elmpath, fileQueue, pretest, watch} = parseOpt(argv)
   log('Starting elm-doctest ...')
 
   if (!runPretest(pretest)) {
@@ -70,7 +66,7 @@ function runPretest (pretest) {
     process.exit(1)
   }
 
-  const { addfiles, runnext } = makeElmRuntime(elmMake, elmRepl, watch)
+  const { addfiles, runnext } = makeElmRuntime(elmpath, watch)
 
   // persist/watch files if `--watch` option was given
   if (watch) {

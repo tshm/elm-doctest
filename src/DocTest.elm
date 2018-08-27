@@ -81,7 +81,7 @@ collectSpecs src =
                 String.join ""
                     [ "expression_"
                     , String.fromInt line
-                    , " = "
+                    , " =\n"
                     , test
                     , "expected_"
                     , String.fromInt line
@@ -143,7 +143,7 @@ import Json.Encode as J_
 
         eval =
             """
-J_.encode 0 <| J_.list <| List.map \\
+J_.encode 0 <| J_.list (\\o -> o) <| List.map \\
   (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
 """
     in
