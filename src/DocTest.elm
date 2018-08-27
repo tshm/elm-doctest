@@ -1,6 +1,6 @@
 module DocTest exposing (..)
 
-import Regex exposing (..)
+import Regex
 import String
 import Json.Decode exposing (..)
 
@@ -57,7 +57,8 @@ collectSpecs : String -> ( String, List Spec )
 collectSpecs src =
     let
         blockCommentRegex =
-            regex "{-(.|\\n)*?-}"
+          Maybe.withDefault Regex.never <|
+            Regex.fromString "{-(.|\\n)*?-}"
 
         evaluationMatcher =
             "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
@@ -66,10 +67,12 @@ collectSpecs src =
             "(\\2(?!>>>).+\\3)*"
 
         testBlockRegex =
-            regex (evaluationMatcher ++ expectedMatcher)
+          Maybe.withDefault Regex.never <|
+            Regex.fromString (evaluationMatcher ++ expectedMatcher)
 
         lineMatcher =
-            regex "(?:--)?([\\t ]*>>>)?(.+)"
+          Maybe.withDefault Regex.never <|
+            Regex.fromString "(?:--)?([\\t ]*>>>)?(.+)"
 
         replacementStr { test, expected, line } =
             if String.isEmpty expected then
@@ -77,11 +80,11 @@ collectSpecs src =
             else
                 String.join ""
                     [ "expression_"
-                    , toString line
-                    , " = "
+                    , String.fromInt line
+                    , " =\n"
                     , test
                     , "expected_"
-                    , toString line
+                    , String.fromInt line
                     , " = "
                     , expected
                     ]
@@ -99,7 +102,7 @@ collectSpecs src =
                         _ ->
                             spec
             in
-                find All lineMatcher match
+                Regex.find lineMatcher match
                     |> List.foldl constructSpec (newSpec "" "" (countLines index))
                     |> \spec -> { spec | test = spec.test, expected = spec.expected }
 
@@ -107,16 +110,20 @@ collectSpecs src =
             String.left index src |> String.lines |> List.length
 
         modifiedSrc =
-            replace All blockCommentRegex lineCommentify src
+            Regex.replace blockCommentRegex lineCommentify src
+
+        commentPattern =
+          Maybe.withDefault Regex.never <|
+            Regex.fromString "({-|-})"
 
         lineCommentify { match } =
             String.lines match
-                |> List.map (replace All (regex "({-|-})") (always "--"))
+                |> List.map (Regex.replace commentPattern (always "--"))
                 |> List.map (\line -> "-- " ++ line)
                 |> String.join "\n"
     in
-        ( replace All testBlockRegex (replacementStr << extractSpecs) modifiedSrc
-        , find All testBlockRegex modifiedSrc
+        ( Regex.replace testBlockRegex (replacementStr << extractSpecs) modifiedSrc
+        , Regex.find testBlockRegex modifiedSrc
             |> List.map extractSpecs
             |> List.filter (\spec -> not <| String.isEmpty spec.expected)
         )
@@ -125,22 +132,20 @@ collectSpecs src =
 evalHeader : String -> String
 evalHeader modname =
     let
-        first =
-            """
-import Json.Decode
-import Json.Encode as J_
-"""
-
         targetImport =
             "import " ++ modname ++ " exposing (..)"
 
         eval =
             """
-J_.encode 0 <| J_.list <| List.map \\
-  (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
+(\\x -> "[" ++ x ++ "]")\\
+<| String.join "," <| List.map\\
+  (\\(o,r) ->\\
+    ("{\\"passed\\":" ++ (if r then "true" else "false")\\
+    ++ ", \\"output\\":" ++ Debug.toString o ++ "}"))\\
+<|\\
 """
     in
-        first ++ targetImport ++ eval
+        targetImport ++ eval
 
 
 
@@ -189,10 +194,10 @@ evaluationScript filename specs =
         evalSpec { test, expected, line } =
             let
                 num =
-                    toString line
+                    String.fromInt line
             in
                 String.join ""
-                    [ "( (toString expression_"
+                    [ "( (Debug.toString expression_"
                     , num
                     , ")"
                     , ", (expression_"
@@ -228,7 +233,8 @@ createTempModule modulename src specs =
             "(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
 
         moduleRe =
-            regex (modulePart ++ exposingPart)
+          Maybe.withDefault Regex.never <|
+            Regex.fromString (modulePart ++ exposingPart)
 
         newheader =
             "module " ++ modulename ++ " exposing (..)\n"
@@ -245,7 +251,7 @@ createTempModule modulename src specs =
                     newheader
 
         replacedSrc =
-            replace (AtMost 1) moduleRe moduledecr src
+            Regex.replaceAtMost 1 moduleRe moduledecr src
 
         -- even supports the case where there is no module declaration
     in
@@ -275,8 +281,8 @@ createReport filename specs =
 
         summary =
             String.join "  "
-                [ "Examples: " ++ (toString <| List.length specs)
-                , "Failures: " ++ (toString <| List.length failures)
+                [ "Examples: " ++ (String.fromInt <| List.length specs)
+                , "Failures: " ++ (String.fromInt <| List.length failures)
                 ]
 
         reports =
@@ -287,7 +293,7 @@ createReport filename specs =
                 [ "### Failure in "
                     ++ filename
                     ++ ":"
-                    ++ (toString line)
+                    ++ (String.fromInt line)
                     ++ ": expression "
                     ++ test
                 , "expected: " ++ (String.trim expected)

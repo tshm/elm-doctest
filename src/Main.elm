@@ -4,14 +4,16 @@ import DocTest
 import String
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Platform.program
-        { init = ( emptyModel, Cmd.none )
+    Platform.worker
+        { init = init
         , update = update
         , subscriptions = subscriptions
         }
 
+init : () -> ( Model, Cmd Msg )
+init _ = ( emptyModel, Cmd.none )
 
 type Msg
     = AddFileQueue (List String)
@@ -24,7 +26,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AddFileQueue filenames ->
-            { model | fileQueue = model.fileQueue ++ filenames } ! [ Cmd.none ]
+            ({ model | fileQueue = model.fileQueue ++ filenames }, Cmd.none)
 
         Input { code, filename } ->
             let
@@ -43,7 +45,7 @@ update msg model =
             in
                 ( { model | currentSpecs = specs }, evaluate out )
 
-        NewResult result ->
+        NewResult rst ->
             let
                 createReport specs { filename, stdout, failed } =
                     if failed then
@@ -56,17 +58,17 @@ update msg model =
                         DocTest.createReportFromOutput filename specs stdout
 
                 reportData =
-                    createReport model.currentSpecs result
+                    createReport model.currentSpecs rst
 
                 success =
                     model.success && (not reportData.failed)
             in
-                { model | success = success } ! [ report reportData ]
+                ({ model | success = success }, report reportData)
 
         GoNext watch ->
             case model.fileQueue of
                 newfile :: rest ->
-                    { model | fileQueue = rest } ! [ readfile newfile ]
+                    ({ model | fileQueue = rest }, readfile newfile)
 
                 [] ->
                     if watch || model.success then

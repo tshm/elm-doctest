@@ -14,10 +14,10 @@ import TestData.TestFail as F
 -- >>> greetingTo "World"
 -- "Hello World"
 --
--- >>> let
--- >>>   x = 3
--- >>>   y = 2
--- >>> in x + y
+-- >>>  let
+-- >>>    x = 3
+-- >>>    y = 2
+-- >>>  in x + y
 -- 5
 --
 add : Int -> Int -> Int
