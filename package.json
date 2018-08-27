@@ -14,12 +14,11 @@
     "yarn": "^1.9.4"
   },
   "scripts": {
-    "prebuild": "yarn install",
-    "dist": "npm build",
-    "build": "elm make src/Main.elm --output ./src/elm.js",
+    "dist": "npm run build",
+    "build": "elm make --optimize src/Main.elm --output ./src/elm.js",
     "check": "npm-check -s -p",
     "lint": "standard src/bridge.js src/main.js src/util.js",
-    "pretest": "npm build && npm run check && npm run lint",
+    "pretest": "npm run build && npm run check && npm run lint",
     "test0": "node ./test/run.js",
     "test": "npm run test0"
   },
