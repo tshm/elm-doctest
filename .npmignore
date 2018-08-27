@@ -1,4 +1,10 @@
 node_modules/
+yarn.lock
+.vscode/*
+test/*
+src/*.elm
+elm.json
+*.tgz
 elm-stuff/
 .*.vim
 .tmp*
