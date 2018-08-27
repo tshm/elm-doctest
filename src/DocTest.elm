@@ -132,22 +132,20 @@ collectSpecs src =
 evalHeader : String -> String
 evalHeader modname =
     let
-        first =
-            """
-import Json.Decode
-import Json.Encode as J_
-"""
-
         targetImport =
             "import " ++ modname ++ " exposing (..)"
 
         eval =
             """
-J_.encode 0 <| J_.list (\\o -> o) <| List.map \\
-  (\\(o,r) -> J_.object [("passed", J_.bool r), ("output", J_.string o)]) <|\\
+(\\x -> "[" ++ x ++ "]")\\
+<| String.join "," <| List.map\\
+  (\\(o,r) ->\\
+    ("{\\"passed\\":" ++ (if r then "true" else "false")\\
+    ++ ", \\"output\\":" ++ Debug.toString o ++ "}"))\\
+<|\\
 """
     in
-        first ++ targetImport ++ eval
+        targetImport ++ eval
 
 
 
