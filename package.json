@@ -15,13 +15,13 @@
   },
   "scripts": {
     "prebuild": "yarn install",
-    "dist": "yarn build",
+    "dist": "npm build",
     "build": "elm make src/Main.elm --output ./src/elm.js",
     "check": "npm-check -s -p",
     "lint": "standard src/bridge.js src/main.js src/util.js",
-    "pretest": "yarn build && yarn check && yarn lint",
+    "pretest": "npm build && npm run check && npm run lint",
     "test0": "node ./test/run.js",
-    "test": "yarn test0"
+    "test": "npm run test0"
   },
   "repository": {
     "type": "git",
