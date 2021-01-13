@@ -43,7 +43,7 @@ If value reported by `elm-repl` is `True` then test passes, fail otherwise.
 ## usage
 
 ```
-Usage: elm-doctest [--watch] [--help] [--elm-path]
+Usage: elm-doctest [--watch] [--help] [--elm-path PATH]
                    [--pretest CMD] FILES...
   run doctest against given Elm files
 
