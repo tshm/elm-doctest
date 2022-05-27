@@ -1,4 +1,4 @@
-[![Build Status](https://semaphoreci.com/api/v1/tshm/elm-doctest/branches/master/badge.svg)](https://semaphoreci.com/tshm/elm-doctest)
+[![Build Status](https://github.com/tshm/elm-doctest/actions/workflows/node.js.yml/badge.svg)](https://github.com/tshm/elm-doctest/actions/workflows/node.js.yml)
 [![npm version](https://badge.fury.io/js/elm-doctest.svg)](https://badge.fury.io/js/elm-doctest)
 
 # elm-doctest
