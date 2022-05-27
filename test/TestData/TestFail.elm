@@ -10,12 +10,18 @@ module TestData.TestFail exposing (..)
 -- >>> greetingTo "World"
 -- "Konnichiwa World"
 --
+
+
 add : Int -> Int -> Int
-add x y = x + y
+add x y =
+    x + y
+
 
 greetingTo : String -> String
-greetingTo x = "Hello " ++ x
+greetingTo x =
+    "Hello " ++ x
+
 
 removeZeros : List Int -> List Int
-removeZeros = List.filter (\x -> x /= 0)
-
+removeZeros =
+    List.filter (\x -> x /= 0)

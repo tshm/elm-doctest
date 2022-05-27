@@ -2,18 +2,22 @@
 [![npm version](https://badge.fury.io/js/elm-doctest.svg)](https://badge.fury.io/js/elm-doctest)
 
 # elm-doctest
+
 [doctest](https://en.wikipedia.org/wiki/Docstring)
 runner against Elm-lang source files
 
 ## installation
+
 ```shell
 npm install elm-doctest
 ```
+
 It depends on `elm` and assumes that `elm-make` and `elm-repl` are available
 either via systemwide installation or npm module installation.
 Make sure `elm-make` succeeds with your elm source files.
 
 ## how does it work?
+
 It utilizes `elm-repl` for expression evaluation and compare the values
 against the expected value.
 (It does not comapre stringified values like haskell doctest does via
@@ -25,6 +29,7 @@ until end of the line)
 and the expression on the next line after `-- `.
 
 For example, if the comment states:
+
 ```Elm
 -- >>> x =
 -- >>>   1 + 2
@@ -32,12 +37,15 @@ For example, if the comment states:
 -- >>> x * 2
 -- 6
 ```
+
 Then, elm-doctest asks elm-repl to evaluate the
 actual code section in the source file and
 effectively following expression:
+
 ```Elm
 ((1 + 2) * 2) == (6)
 ```
+
 If value reported by `elm-repl` is `True` then test passes, fail otherwise.
 
 ## usage
@@ -57,6 +65,7 @@ Available options:
 ## example
 
 ModuleTobeTested.elm:
+
 ```Elm
 module ModuleTobeTested exposing(..)
 
@@ -81,6 +90,7 @@ removeZeros = List.filter (\x -> x /= 0)
 ```
 
 evaluation `elm-doctest ModuleTobeTested.elm` outputs
+
 ```
 Starting elm-doctest ...
 
@@ -105,8 +115,6 @@ Also, make sure elm-make runs without error.
 You can auto run elm-make by using `--pretest` command-line
 option.
 
-
 ## license
 
 MIT
-

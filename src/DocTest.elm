@@ -1,8 +1,9 @@
 module DocTest exposing (..)
 
+import Json.Decode exposing (..)
 import Regex
 import String
-import Json.Decode exposing (..)
+
 
 
 -- | model for holding spec info
@@ -57,8 +58,8 @@ collectSpecs : String -> ( String, List Spec )
 collectSpecs src =
     let
         blockCommentRegex =
-          Maybe.withDefault Regex.never <|
-            Regex.fromString "{-(.|\\n)*?-}"
+            Maybe.withDefault Regex.never <|
+                Regex.fromString "{-(.|\\n)*?-}"
 
         evaluationMatcher =
             "((--[\\t ]*)>>>.+(\\r\\n?|\\n))+"
@@ -67,16 +68,17 @@ collectSpecs src =
             "(\\2(?!>>>).+\\3)*"
 
         testBlockRegex =
-          Maybe.withDefault Regex.never <|
-            Regex.fromString (evaluationMatcher ++ expectedMatcher)
+            Maybe.withDefault Regex.never <|
+                Regex.fromString (evaluationMatcher ++ expectedMatcher)
 
         lineMatcher =
-          Maybe.withDefault Regex.never <|
-            Regex.fromString "(?:--)?([\\t ]*>>>)?(.+)"
+            Maybe.withDefault Regex.never <|
+                Regex.fromString "(?:--)?([\\t ]*>>>)?(.+)"
 
         replacementStr { test, expected, line } =
             if String.isEmpty expected then
                 String.trimLeft test
+
             else
                 String.join ""
                     [ "expression_"
@@ -102,9 +104,9 @@ collectSpecs src =
                         _ ->
                             spec
             in
-                Regex.find lineMatcher match
-                    |> List.foldl constructSpec (newSpec "" "" (countLines index))
-                    |> \spec -> { spec | test = spec.test, expected = spec.expected }
+            Regex.find lineMatcher match
+                |> List.foldl constructSpec (newSpec "" "" (countLines index))
+                |> (\spec -> { spec | test = spec.test, expected = spec.expected })
 
         countLines index =
             String.left index src |> String.lines |> List.length
@@ -113,8 +115,8 @@ collectSpecs src =
             Regex.replace blockCommentRegex lineCommentify src
 
         commentPattern =
-          Maybe.withDefault Regex.never <|
-            Regex.fromString "({-|-})"
+            Maybe.withDefault Regex.never <|
+                Regex.fromString "({-|-})"
 
         lineCommentify { match } =
             String.lines match
@@ -122,11 +124,11 @@ collectSpecs src =
                 |> List.map (\line -> "-- " ++ line)
                 |> String.join "\n"
     in
-        ( Regex.replace testBlockRegex (replacementStr << extractSpecs) modifiedSrc
-        , Regex.find testBlockRegex modifiedSrc
-            |> List.map extractSpecs
-            |> List.filter (\spec -> not <| String.isEmpty spec.expected)
-        )
+    ( Regex.replace testBlockRegex (replacementStr << extractSpecs) modifiedSrc
+    , Regex.find testBlockRegex modifiedSrc
+        |> List.map extractSpecs
+        |> List.filter (\spec -> not <| String.isEmpty spec.expected)
+    )
 
 
 evalHeader : String -> String
@@ -137,15 +139,15 @@ evalHeader modname =
 
         eval =
             """
-(\\x -> "[" ++ x ++ "]")\\
-<| String.join "," <| List.map\\
-  (\\(o,r) ->\\
-    ("{\\"passed\\":" ++ (if r then "true" else "false")\\
-    ++ ", \\"output\\":" ++ Debug.toString o ++ "}"))\\
-<|\\
+(\\x -> "[" ++ x ++ "]") <|
+  String.join "," <| List.map
+  (\\(o,r) ->
+    ("{\\"passed\\":" ++ (if r then "true" else "false")
+    ++ ", \\"output\\":" ++ Debug.toString o ++ "}"))
+<|
 """
     in
-        targetImport ++ eval
+    targetImport ++ eval
 
 
 
@@ -168,6 +170,7 @@ getModuleName filename =
             (\c ->
                 if List.member c [ '/', '\\', '.' ] then
                     ' '
+
                 else
                     c
             )
@@ -189,24 +192,24 @@ evaluationScript filename specs =
         testCaseArray =
             "  ["
                 ++ (List.map evalSpec specs |> String.join "\n  ,")
-                ++ "\n  ]"
+                ++ "\n  ]\n\n"
 
         evalSpec { test, expected, line } =
             let
                 num =
                     String.fromInt line
             in
-                String.join ""
-                    [ "( (Debug.toString expression_"
-                    , num
-                    , ")"
-                    , ", (expression_"
-                    , num
-                    , " == "
-                    , "expected_"
-                    , num
-                    , "))"
-                    ]
+            String.join ""
+                [ "( (Debug.toString expression_"
+                , num
+                , ")"
+                , ", (expression_"
+                , num
+                , " == "
+                , "expected_"
+                , num
+                , "))"
+                ]
 
         header =
             evalHeader moduleName
@@ -214,9 +217,9 @@ evaluationScript filename specs =
         moduleName =
             getModuleName filename
     in
-        ( header ++ (testCaseArray |> String.lines |> String.join "\\\n")
-        , moduleName
-        )
+    ( header ++ (testCaseArray |> String.lines |> String.join "\n")
+    , moduleName
+    )
 
 
 
@@ -233,14 +236,14 @@ createTempModule modulename src specs =
             "(\\s+?exposing\\s+\\(([^()]|\\([^()]*\\))+\\))?"
 
         moduleRe =
-          Maybe.withDefault Regex.never <|
-            Regex.fromString (modulePart ++ exposingPart)
+            Maybe.withDefault Regex.never <|
+                Regex.fromString (modulePart ++ exposingPart)
 
         newheader =
             "module " ++ modulename ++ " exposing (..)\n"
 
         isport match =
-            (List.head match.submatches) == Just Nothing
+            List.head match.submatches == Just Nothing
 
         moduledecr match =
             case match.submatches of
@@ -255,10 +258,11 @@ createTempModule modulename src specs =
 
         -- even supports the case where there is no module declaration
     in
-        if replacedSrc == src then
-            newheader ++ src
-        else
-            replacedSrc
+    if replacedSrc == src then
+        newheader ++ src
+
+    else
+        replacedSrc
 
 
 
@@ -293,15 +297,15 @@ createReport filename specs =
                 [ "### Failure in "
                     ++ filename
                     ++ ":"
-                    ++ (String.fromInt line)
+                    ++ String.fromInt line
                     ++ ": expression "
                     ++ test
-                , "expected: " ++ (String.trim expected)
-                , " but got: " ++ (String.trim output)
+                , "expected: " ++ String.trim expected
+                , " but got: " ++ String.trim output
                 , ""
                 ]
     in
-        Report (String.join "\n" reports ++ summary) (not <| List.isEmpty failures)
+    Report (String.join "\n" reports ++ summary) (not <| List.isEmpty failures)
 
 
 
@@ -327,7 +331,7 @@ parseOutput txt =
                     (Json.Decode.field "output" string)
                     (Json.Decode.field "passed" bool)
     in
-        Result.withDefault [] <| decodeString decoder txt
+    Result.withDefault [] <| decodeString decoder txt
 
 
 
@@ -343,7 +347,7 @@ mergeResultIntoSpecs specs outputs =
         merge spec { expression, passed } =
             { spec | output = expression, passed = passed }
     in
-        List.map2 merge specs outputs
+    List.map2 merge specs outputs
 
 
 
@@ -365,4 +369,4 @@ createReportFromOutput filename specs output =
         resultSpecs =
             mergeRawOutputIntoSpecs specs output
     in
-        createReport filename resultSpecs
+    createReport filename resultSpecs

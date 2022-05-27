@@ -4,18 +4,18 @@ const { spawnSync } = require('child_process')
 
 /** parse commandline options
  */
-function parseOpt (argv) {
+function parseOpt(argv) {
   const optSpec = {
     boolean: ['help', 'version', 'watch'],
     string: ['elm-path', 'pretest'],
-    alias: {h: 'help', v: 'version', w: 'watch'}
+    alias: { h: 'help', v: 'version', w: 'watch' },
   }
   const opts = require('minimist')(argv, optSpec)
   dump(opts)
 
   // show usage/help message
   if (opts.version || opts.help || opts._.length === 0) {
-    (function showHelpMessage () {
+    ;(function showHelpMessage() {
       const version = require('../package.json').version
       log(`elm-doctest ${version}`)
       log('')
@@ -24,14 +24,12 @@ function parseOpt (argv) {
       log('  run doctest against given Elm files')
       log('')
       log('Available options:')
-      log('  -h,--help\t\t' +
-        'Show this help text')
-      log('  -w,--watch\t\t' +
-        'Watch and run tests when target files get updated')
-      log('  --elm-path PATH\t' +
-        'Path to elm executable')
-      log('  --pretest CMD\t\t' +
-        'command to run before doc-test')
+      log('  -h,--help\t\t' + 'Show this help text')
+      log(
+        '  -w,--watch\t\t' + 'Watch and run tests when target files get updated'
+      )
+      log('  --elm-path PATH\t' + 'Path to elm executable')
+      log('  --pretest CMD\t\t' + 'command to run before doc-test')
     })()
     process.exit(RETVAL.SUCCESS)
   }
@@ -40,16 +38,16 @@ function parseOpt (argv) {
     elmpath: opts['elm-path'] || 'elm',
     fileQueue: opts._,
     pretest: opts.pretest ? opts.pretest.split(' ') : [],
-    watch: opts.watch
+    watch: opts.watch,
   }
 }
 
 /** run pretest */
-function runPretest (pretest) {
+function runPretest(pretest) {
   if (pretest.length === 0) return true
   const cmd = pretest[0]
   const args = pretest.slice(1)
-  const { stdout, stderr, status } = spawnSync(cmd, args, {encoding: 'utf8'})
+  const { stdout, stderr, status } = spawnSync(cmd, args, { encoding: 'utf8' })
   if (stdout) log(`pretest: ${stdout}`)
   if (stderr) log(`pretest err: ${stderr}`)
   log(`pretest status: ${status}`)
@@ -57,8 +55,8 @@ function runPretest (pretest) {
 }
 
 /** main */
-(function main (argv) {
-  const {elmpath, fileQueue, pretest, watch} = parseOpt(argv)
+;(function main(argv) {
+  const { elmpath, fileQueue, pretest, watch } = parseOpt(argv)
   log('Starting elm-doctest ...')
 
   if (!runPretest(pretest)) {

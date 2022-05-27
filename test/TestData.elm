@@ -2,6 +2,8 @@ module TestData exposing (..)
 
 import TestData.TestFail as F
 
+
+
 -- |
 -- >>> F.greetingTo "test"
 -- "Hello test"
@@ -20,12 +22,18 @@ import TestData.TestFail as F
 -- >>>  in x + y
 -- 5
 --
+
+
 add : Int -> Int -> Int
-add x y = x + y
+add x y =
+    x + y
+
 
 greetingTo : String -> String
-greetingTo x = "Hello " ++ x
+greetingTo x =
+    "Hello " ++ x
+
 
 removeZeros : List Int -> List Int
-removeZeros = List.filter (\x -> x /= 0)
-
+removeZeros =
+    List.filter (\x -> x /= 0)

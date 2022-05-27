@@ -1,5 +1,10 @@
-module ParamTest exposing (Msg(Example))
-type Msg = Example
+module ParamTest exposing (Msg(..))
+
+
+type Msg
+    = Example
+
+
 
 -- |
 -- >>> x =
