@@ -12,8 +12,11 @@ main =
         , subscriptions = subscriptions
         }
 
+
 init : () -> ( Model, Cmd Msg )
-init _ = ( emptyModel, Cmd.none )
+init _ =
+    ( emptyModel, Cmd.none )
+
 
 type Msg
     = AddFileQueue (List String)
@@ -26,7 +29,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AddFileQueue filenames ->
-            ({ model | fileQueue = model.fileQueue ++ filenames }, Cmd.none)
+            ( { model | fileQueue = model.fileQueue ++ filenames }, Cmd.none )
 
         Input { code, filename } ->
             let
@@ -43,17 +46,20 @@ update msg model =
                     , modulename = modulename
                     }
             in
-                ( { model | currentSpecs = specs }, evaluate out )
+            ( { model | currentSpecs = specs }, evaluate out )
 
         NewResult rst ->
             let
                 createReport specs { filename, stdout, failed } =
                     if failed then
                         DocTest.Report stdout True
+
                     else if List.isEmpty specs then
                         DocTest.Report "no test found" False
+
                     else if String.isEmpty stdout then
                         DocTest.Report "" False
+
                     else
                         DocTest.createReportFromOutput filename specs stdout
 
@@ -61,18 +67,19 @@ update msg model =
                     createReport model.currentSpecs rst
 
                 success =
-                    model.success && (not reportData.failed)
+                    model.success && not reportData.failed
             in
-                ({ model | success = success }, report reportData)
+            ( { model | success = success }, report reportData )
 
         GoNext watch ->
             case model.fileQueue of
                 newfile :: rest ->
-                    ({ model | fileQueue = rest }, readfile newfile)
+                    ( { model | fileQueue = rest }, readfile newfile )
 
                 [] ->
                     if watch || model.success then
                         ( model, Cmd.none )
+
                     else
                         ( model, exit () )
 

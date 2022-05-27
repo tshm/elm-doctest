@@ -5,7 +5,7 @@ const { spawnSync } = require('child_process')
 
 /** setup elm runtime
  */
-function makeElmRuntime (elm, watch) {
+function makeElmRuntime(elm, watch) {
   /** extract source folder from elm.json */
   const cwd = (() => {
     try {
@@ -18,10 +18,13 @@ function makeElmRuntime (elm, watch) {
 
   /** run elm make to make sure test code compiles
    */
-  function checkElmMake (elm, testfilename, elmfile) {
+  function checkElmMake(elm, testfilename, elmfile) {
     dump(`checkElmMake(${elm}, ${testfilename}, ${elmfile}) called`)
-    const { stdout, status, stderr } =
-      spawnSync(elm, ['make', testfilename, '--output=.tmp.js'], {encoding: 'utf8'})
+    const { stdout, status, stderr } = spawnSync(
+      elm,
+      ['make', testfilename, '--output=/dev/null'],
+      { encoding: 'utf8' }
+    )
     if (status !== 0) {
       log(`status: ${status}`)
       log(`stdout: ${stdout}`)
@@ -37,11 +40,11 @@ function makeElmRuntime (elm, watch) {
 
   /** read elm source file and send it back to runtime
    */
-  app.ports.readfile.subscribe(elmfile => {
+  app.ports.readfile.subscribe((elmfile) => {
     try {
       const elmsrc = fs.readFileSync(elmfile, 'utf8')
       log(`\n processing: ${elmfile}`)
-      app.ports.srccode.send({code: elmsrc, filename: elmfile})
+      app.ports.srccode.send({ code: elmsrc, filename: elmfile })
     } catch (e) {
       log(`failed to run tests: ${e}`)
       process.exit(RETVAL.EXCEPTION)
@@ -51,7 +54,7 @@ function makeElmRuntime (elm, watch) {
   /** receive evaluate message from Elm and elm make and evaluate
    * test cases, then send it back to Elm.
    */
-  app.ports.evaluate.subscribe(({src, runner, filename, modulename}) => {
+  app.ports.evaluate.subscribe(({ src, runner, filename, modulename }) => {
     dump('----------- evaluate called.')
     dump([src, runner, filename])
     if (src.length === 0) return
@@ -61,7 +64,14 @@ function makeElmRuntime (elm, watch) {
       if (checkElmMake(elm, tempModulePath, filename) !== 0) {
         throw new Error('elm make exited with error')
       }
-      const {stdout, stderr, status} = spawnSync(elm, ['repl'], {input: runner, encoding: 'utf8'})
+      const { stdout, stderr, status } = spawnSync(
+        elm,
+        ['repl', '--no-colors'],
+        {
+          input: runner,
+          encoding: 'utf8',
+        }
+      )
       if (DEBUG) fs.writeFileSync('runner.elm', runner)
       dump(`stdout: ${stdout}`)
       if (status !== 0 || stderr) {
@@ -73,10 +83,18 @@ function makeElmRuntime (elm, watch) {
         dump(`match: ${match[0]}`)
         const resultStr = match[0].replace(/[^"]*(".+").*/, '$1')
         dump(resultStr)
-        app.ports.result.send({ stdout: JSON.parse(resultStr), filename: filename, failed: false })
+        app.ports.result.send({
+          stdout: JSON.parse(resultStr),
+          filename: filename,
+          failed: false,
+        })
       }
     } catch (e) {
-      app.ports.result.send({ stdout: e.message, filename: filename, failed: true })
+      app.ports.result.send({
+        stdout: e.message,
+        filename: filename,
+        failed: true,
+      })
     } finally {
       if (!DEBUG && fs.existsSync(tempModulePath)) fs.unlinkSync(tempModulePath)
     }
@@ -85,7 +103,7 @@ function makeElmRuntime (elm, watch) {
   /** Receive report message from Elm and
    * display results
    */
-  app.ports.report.subscribe(report => {
+  app.ports.report.subscribe((report) => {
     log(report.text)
     app.ports.next.send(watch)
   })
@@ -96,11 +114,15 @@ function makeElmRuntime (elm, watch) {
   })
 
   return {
-    addfiles: function (o) { app.ports.addfiles.send(o) },
-    runnext: function (o) { app.ports.next.send(o) }
+    addfiles: function (o) {
+      app.ports.addfiles.send(o)
+    },
+    runnext: function (o) {
+      app.ports.next.send(o)
+    },
   }
 }
 
 module.exports = {
-  makeElmRuntime: makeElmRuntime
+  makeElmRuntime: makeElmRuntime,
 }
