@@ -1,3 +1,7 @@
+// @ts-check
+/**
+ * @param {string} o
+ */
 function log(o) {
   console.log(o)
 }
