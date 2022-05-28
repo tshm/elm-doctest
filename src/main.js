@@ -1,8 +1,12 @@
+// @ts-check
 const { log, dump, RETVAL } = require('./util')
 const { makeElmRuntime } = require('./bridge')
 const { spawnSync } = require('child_process')
 
-/** parse commandline options
+/**
+ * parse commandline options
+ * @param {string[]} argv
+ * @returns {{ elmpath: string, fileQueue: string[], pretest: string[], watch: boolean }}
  */
 function parseOpt(argv) {
   const optSpec = {
@@ -42,7 +46,10 @@ function parseOpt(argv) {
   }
 }
 
-/** run pretest */
+/**
+ * run pretest
+ * @param {string[]} pretest
+ */
 function runPretest(pretest) {
   if (pretest.length === 0) return true
   const cmd = pretest[0]

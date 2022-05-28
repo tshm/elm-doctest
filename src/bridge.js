@@ -1,22 +1,30 @@
+// @ts-check
 const { log, dump, DEBUG, RETVAL } = require('./util')
 const path = require('path')
 const fs = require('fs')
 const { spawnSync } = require('child_process')
 
-/** setup elm runtime
+/**
+ * setup elm runtime
+ * @param {string} elm
+ * @param {boolean} watch
  */
 function makeElmRuntime(elm, watch) {
   /** extract source folder from elm.json */
   const cwd = (() => {
     try {
       const data = fs.readFileSync('elm.json')
-      return JSON.parse(data)['source-directories'][0]
+      return JSON.parse(data.toString())['source-directories'][0]
     } catch (e) {
       return './'
     }
   })()
 
-  /** run elm make to make sure test code compiles
+  /**
+   * run elm make to make sure test code compiles
+   * @param {string} elm
+   * @param {string} testfilename
+   * @param {string} elmfile
    */
   function checkElmMake(elm, testfilename, elmfile) {
     dump(`checkElmMake(${elm}, ${testfilename}, ${elmfile}) called`)
@@ -36,6 +44,7 @@ function makeElmRuntime(elm, watch) {
   }
 
   // load main Elm script
+  // @ts-ignore
   const app = require('./elm').Elm.Main.init()
 
   /** read elm source file and send it back to runtime
@@ -114,15 +123,13 @@ function makeElmRuntime(elm, watch) {
   })
 
   return {
-    addfiles: function (o) {
+    addfiles: function (/** @type {string[]} */ o) {
       app.ports.addfiles.send(o)
     },
-    runnext: function (o) {
+    runnext: function (/** @type {boolean} */ o) {
       app.ports.next.send(o)
     },
   }
 }
 
-module.exports = {
-  makeElmRuntime: makeElmRuntime,
-}
+module.exports = { makeElmRuntime }
